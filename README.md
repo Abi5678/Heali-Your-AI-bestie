@@ -1,73 +1,116 @@
-# Welcome to your Lovable project
+# Heali – Your AI Bestie
 
-## Project info
+An AI-powered health companion that helps you manage medications, track vitals, log meals, and stay connected with your family. Speak naturally in your language—Heali is your friendly health guardian.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Features
 
-## How can I edit this code?
+- **Voice Guardian** – Talk to your AI companion via voice. Supports English, Hindi, Kannada, and Spanish.
+- **Medication Management** – Log medications, set reminders, and track adherence.
+- **Health Tracking** – Record blood pressure, blood sugar, weight, and other vitals.
+- **Food Log** – Describe or scan meals to log nutrition.
+- **Exercise & Wellness** – Guided stretching and posture sessions with voice coaching.
+- **Pill Check** – Verify medications using your camera.
+- **Family Connection** – Share health updates and emergency alerts with caregivers.
+- **Doctor Booking** – Find clinics and book appointments.
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+| Layer | Stack |
+|-------|-------|
+| Frontend | React, Vite, TypeScript, Tailwind CSS, shadcn/ui |
+| Backend | FastAPI, Python 3.10+ |
+| AI | Google ADK, Gemini Live (native audio) |
+| Data | Firebase Auth, Firestore |
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Prerequisites
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Node.js** 18+ and npm
+- **Python** 3.10+ and [uv](https://github.com/astral-sh/uv)
+- **Firebase** project with Auth and Firestore
+- **Gemini API** key (or Vertex AI)
 
-**Use your preferred IDE**
+## Quick Start
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 1. Clone and install
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```bash
+git clone https://github.com/Abi5678/Heali-Your-AI-bestie.git
+cd Heali-Your-AI-bestie
+npm install
+uv sync
+```
 
-Follow these steps:
+### 2. Configure environment
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```bash
+cp .env.example .env
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Edit `.env` and set:
 
-# Step 3: Install the necessary dependencies.
-npm i
+- `GOOGLE_API_KEY` – Gemini API key
+- `GOOGLE_CLOUD_PROJECT` – GCP project ID
+- `GOOGLE_APPLICATION_CREDENTIALS` – Path to Firebase Admin SDK JSON
+- `USE_FIRESTORE=true` – Enable Firestore
+- `VITE_FIREBASE_*` – Firebase web config (from Firebase Console)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### 3. Run the app
+
+**Terminal 1 – Backend**
+
+```bash
+uv run uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
+```
+
+**Terminal 2 – Frontend**
+
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Open **http://localhost:8082**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Project Structure
 
-**Use GitHub Codespaces**
+```
+├── app/                 # FastAPI backend
+│   ├── main.py          # App entry, WebSocket, REST API
+│   └── api/             # Routers (medications, food, family, etc.)
+├── agents/              # AI agents (Google ADK)
+│   ├── agent.py         # Root coordinator
+│   ├── onboarding/     # First-time setup
+│   ├── guardian/       # Medications, vitals, emergency
+│   ├── exercise/       # Wellness sessions
+│   ├── interpreter/    # Prescription/lab translation
+│   ├── insights/       # Adherence, trends
+│   └── booking/        # Doctor appointments
+├── src/                 # React frontend
+│   ├── pages/          # VoiceGuardian, Profile, Exercise, etc.
+│   ├── components/
+│   └── lib/
+└── credentials/         # Firebase Admin SDK (gitignored)
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Environment Variables
 
-## What technologies are used for this project?
+| Variable | Description |
+|----------|-------------|
+| `GOOGLE_API_KEY` | Gemini API key |
+| `GOOGLE_CLOUD_PROJECT` | GCP project ID |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Firebase Admin SDK path |
+| `USE_FIRESTORE` | `true` to use Firestore |
+| `SKIP_AUTH_FOR_TESTING` | `true` for local demo (no login) |
+| `VITE_API_URL` | Backend URL (e.g. `http://localhost:8002`) |
+| `VITE_WS_URL` | WebSocket URL (e.g. `ws://localhost:8002`) |
 
-This project is built with:
+## Scripts
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start Vite dev server (port 8082) |
+| `npm run build` | Build for production |
+| `uv run uvicorn app.main:app --port 8002` | Start backend |
 
-## How can I deploy this project?
+## License
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+MIT
