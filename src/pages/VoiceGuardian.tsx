@@ -728,7 +728,7 @@ const VoiceGuardian = () => {
                         }`}
                     >
                       <p className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                        {msg.role === "assistant" ? "MedLive" : "You"}
+                        {msg.role === "assistant" ? "Heali" : "You"}
                       </p>
                       <p className="text-sm leading-relaxed">{msg.text}</p>
                     </motion.div>

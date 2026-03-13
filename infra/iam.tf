@@ -2,8 +2,8 @@
 # Service Account for Cloud Run
 # ---------------------------------------------------------------------------
 resource "google_service_account" "cloud_run_sa" {
-  account_id   = "medlive-cloud-run"
-  display_name = "MedLive Cloud Run Service Account"
+  account_id   = "heali-cloud-run"
+  display_name = "Heali Cloud Run Service Account"
   project      = var.project_id
 }
 

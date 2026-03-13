@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# MedLive Connect — Build + Deploy to Cloud Run
+# Heali Connect — Build + Deploy to Cloud Run
 # =============================================================================
 # Usage:
 #   bash scripts/deploy.sh                # Full build + deploy + seed
@@ -17,9 +17,9 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Configuration (override via env vars or --project flag)
 # ---------------------------------------------------------------------------
-PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-medlive-488722}"
+PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-heali-488722}"
 REGION="${GOOGLE_CLOUD_LOCATION:-us-central1}"
-SERVICE_NAME="medlive"
+SERVICE_NAME="heali"
 IMAGE="gcr.io/${PROJECT_ID}/${SERVICE_NAME}"
 
 SKIP_BUILD=false
@@ -33,7 +33,7 @@ for arg in "$@"; do
   esac
 done
 
-echo "🚀 MedLive Connect Deploy"
+echo "🚀 Heali Connect Deploy"
 echo "   Project : ${PROJECT_ID}"
 echo "   Region  : ${REGION}"
 echo "   Image   : ${IMAGE}"
@@ -76,7 +76,7 @@ gcloud run deploy "${SERVICE_NAME}" \
   --memory 2Gi \
   --cpu 2 \
   --set-env-vars "GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},GOOGLE_GENAI_USE_VERTEXAI=FALSE,MEDLIVE_MODEL=gemini-live-2.5-flash-native-audio,USE_FIRESTORE=true,GOOGLE_APPLICATION_CREDENTIALS=/secrets/firebase-admin-sdk.json" \
-  --set-secrets "GOOGLE_API_KEY=medlive-google-api-key:latest,/secrets/firebase-admin-sdk.json=medlive-firebase-admin:latest,REMINDERS_TRIGGER_SECRET=medlive-reminders-secret:latest" \
+  --set-secrets "GOOGLE_API_KEY=heali-google-api-key:latest,/secrets/firebase-admin-sdk.json=heali-firebase-admin:latest,REMINDERS_TRIGGER_SECRET=heali-reminders-secret:latest" \
   --project "${PROJECT_ID}"
 
 echo "   ✓ Cloud Run service deployed"
@@ -101,7 +101,7 @@ gcloud run services update "${SERVICE_NAME}" \
   --quiet
 
 echo ""
-echo "✅  MedLive Connect is live at: ${SERVICE_URL}"
+echo "✅  Heali Connect is live at: ${SERVICE_URL}"
 echo ""
 
 # ---------------------------------------------------------------------------

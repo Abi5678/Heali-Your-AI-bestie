@@ -84,7 +84,7 @@ const AppSidebar = () => {
             </div>
             {!collapsed && (
               <span className="font-display text-lg font-bold tracking-tight text-sidebar-primary">
-                MedLive
+                Heali
               </span>
             )}
           </div>

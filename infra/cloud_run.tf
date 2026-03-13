@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
-# Cloud Run — MedLive application service
+# Cloud Run — Heali application service
 # ---------------------------------------------------------------------------
-resource "google_cloud_run_v2_service" "medlive" {
+resource "google_cloud_run_v2_service" "heali" {
   name     = var.service_name
   location = var.region
   project  = var.project_id
@@ -137,7 +137,7 @@ resource "google_cloud_run_v2_service" "medlive" {
 resource "google_cloud_run_v2_service_iam_member" "public_access" {
   project  = var.project_id
   location = var.region
-  name     = google_cloud_run_v2_service.medlive.name
+  name     = google_cloud_run_v2_service.heali.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }

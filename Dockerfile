@@ -1,5 +1,5 @@
 # =============================================================================
-# MedLive Connect — Multi-Stage Docker Build
+# Heali Connect — Multi-Stage Docker Build
 # Stage 1 (builder): Node 20 → compiles React/TypeScript frontend
 # Stage 2 (runtime): Python 3.11 → runs FastAPI + serves compiled frontend
 # =============================================================================

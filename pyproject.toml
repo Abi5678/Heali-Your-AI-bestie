@@ -1,7 +1,7 @@
 [project]
-name = "medlive"
+name = "heali"
 version = "0.1.0"
-description = "MedLive - Real-time multilingual AI health guardian powered by Gemini Live API and Google ADK"
+description = "Heali - Real-time multilingual AI health guardian powered by Gemini Live API and Google ADK"
 requires-python = ">=3.10"
 
 dependencies = [

@@ -4,9 +4,9 @@
 # ---------------------------------------------------------------------------
 
 # Import existing secrets (created by setup_gcp.sh)
-# To import: terraform import google_secret_manager_secret.google_api_key projects/medlive-488722/secrets/medlive-google-api-key
+# To import: terraform import google_secret_manager_secret.google_api_key projects/heali-488722/secrets/heali-google-api-key
 resource "google_secret_manager_secret" "google_api_key" {
-  secret_id = "medlive-google-api-key"
+  secret_id = "heali-google-api-key"
   project   = var.project_id
 
   replication {
@@ -17,7 +17,7 @@ resource "google_secret_manager_secret" "google_api_key" {
 }
 
 resource "google_secret_manager_secret" "firebase_admin" {
-  secret_id = "medlive-firebase-admin"
+  secret_id = "heali-firebase-admin"
   project   = var.project_id
 
   replication {
@@ -28,7 +28,7 @@ resource "google_secret_manager_secret" "firebase_admin" {
 }
 
 resource "google_secret_manager_secret" "reminders_secret" {
-  secret_id = "medlive-reminders-secret"
+  secret_id = "heali-reminders-secret"
   project   = var.project_id
 
   replication {

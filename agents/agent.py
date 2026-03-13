@@ -1,4 +1,4 @@
-"""MedLive Root Coordinator Agent.
+"""Heali Root Coordinator Agent.
 
 Handles guardian tasks (medications, vitals, meals, pill verification, emergency,
 family calls) directly via tools — avoids sub-agent routing latency in Live mode.
@@ -38,9 +38,9 @@ from agents.guardian.tools import (
 )
 
 root_agent = Agent(
-    name="medlive",
+    name="heali",
     model=LIVE_MODEL,
-    description="MedLive health guardian coordinator",
+    description="Heali health guardian coordinator",
     instruction=ROOT_AGENT_INSTRUCTION,
     tools=[
         get_medication_schedule,

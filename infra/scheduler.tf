@@ -9,7 +9,7 @@
 resource "google_cloud_scheduler_job" "reminders" {
   count = var.app_url != "" ? 1 : 0
 
-  name        = "medlive-reminders"
+  name        = "heali-reminders"
   description = "Fires every 15 min to trigger proactive medication reminders"
   schedule    = "*/15 * * * *"
   time_zone   = "UTC"

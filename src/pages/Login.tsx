@@ -64,7 +64,7 @@ const Login = () => {
       >
         <div className="mb-8 text-center">
           <h1 className="font-display text-4xl font-bold tracking-tight">
-            <em className="text-primary">MedLive</em>
+            <em className="text-primary">Heali</em>
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {isSignUp ? "Create your account" : "Sign in to your health companion"}

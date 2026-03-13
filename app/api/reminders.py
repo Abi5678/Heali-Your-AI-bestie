@@ -162,7 +162,7 @@ async def trigger_reminders(
                     mt = "0" + mt
                 if mt == slot_str:
                     title = "Time for your medications"
-                    body = "Your doses are due. Tap to open MedLive and log."
+                    body = "Your doses are due. Tap to open Heali and log."
                     url = f"{app_url}/?checkin=true&type=meds"
                     try:
                         msg = fb_messaging.Message(
@@ -184,7 +184,7 @@ async def trigger_reminders(
                 lunch_time = "0" + lunch_time
             if lunch_time == slot_str:
                 title = "Log your lunch"
-                body = "Tap to log your meal in MedLive."
+                body = "Tap to log your meal in Heali."
                 url = f"{app_url}/?checkin=true&type=lunch"
                 try:
                     msg = fb_messaging.Message(

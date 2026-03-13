@@ -229,7 +229,7 @@ const Onboarding = () => {
               <Sparkles size={36} className="text-primary" />
             </div>
             <h1 className="font-display text-4xl font-bold tracking-tight lg:text-5xl">
-              Welcome to <em className="text-primary">MedLive</em>
+              Welcome to <em className="text-primary">Heali</em>
             </h1>
             <p className="mt-4 text-lg text-muted-foreground">
               Your AI health guardian that speaks your language, sees your pills, and knows your name.

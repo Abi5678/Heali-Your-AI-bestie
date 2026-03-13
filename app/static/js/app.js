@@ -1,5 +1,5 @@
 /**
- * MedLive WebSocket Client & UI Controller (Phase 4)
+ * Heali WebSocket Client & UI Controller (Phase 4)
  *
  * Handles:
  * - Firebase Auth gate (redirect to auth.html if not signed in)
@@ -20,8 +20,8 @@ import { CameraManager } from "./camera.js";
 // Auth gate — must be signed in before anything else
 // ---------------------------------------------------------------------------
 
-const uid = localStorage.getItem("medlive_uid");
-const idToken = localStorage.getItem("medlive_id_token");
+const uid = localStorage.getItem("heali_uid");
+const idToken = localStorage.getItem("heali_id_token");
 
 if (!uid || !idToken) {
   window.location.href = "/static/auth.html";
@@ -119,7 +119,7 @@ const LANG_TO_GREETING = {
 
 // Language + companion name from localStorage (written by onboarding)
 // Use `let` so applyProfileLocally() can update it live after a profile save
-let language = localStorage.getItem("medlive_language") || "English";
+let language = localStorage.getItem("heali_language") || "English";
 let currentLocale = LANG_TO_LOCALE[language] || LOCALE.en;
 
 // ---------------------------------------------------------------------------
@@ -153,7 +153,7 @@ const ambientCameraBtn = document.getElementById("ambient-camera-btn");
 // ---------------------------------------------------------------------------
 
 const AGENT_META = {
-  medlive: { icon: "💙", label: "Companion", agent: "companion" },
+  heali: { icon: "💙", label: "Companion", agent: "companion" },
   guardian_agent: { icon: "🛡️", label: "Guardian", agent: "guardian" },
   interpreter_agent: { icon: "🌐", label: "Interpreter", agent: "interpreter" },
   insights_agent: { icon: "📊", label: "Insights", agent: "insights" },
@@ -194,10 +194,10 @@ function showAgentBadge(authorName) {
 
 function initPersonaUI() {
   // Default voice if never set (e.g. pre-existing user before voice profile feature)
-  if (!localStorage.getItem("medlive_voice_name")) localStorage.setItem("medlive_voice_name", "Aoede");
+  if (!localStorage.getItem("heali_voice_name")) localStorage.setItem("heali_voice_name", "Aoede");
 
-  const companionName = localStorage.getItem("medlive_companion_name") || "Health Companion";
-  const avatarB64 = localStorage.getItem("medlive_avatar");
+  const companionName = localStorage.getItem("heali_companion_name") || "Health Companion";
+  const avatarB64 = localStorage.getItem("heali_avatar");
 
   // Set companion name
   if (avatarName) avatarName.textContent = companionName;
@@ -237,14 +237,14 @@ async function refreshToken() {
     // firebase global is available from the compat SDK loaded in index.html
     const user = firebase.auth().currentUser;
     if (!user) {
-      console.warn("[MedLive] refreshToken: no current user, skipping");
+      console.warn("[Heali] refreshToken: no current user, skipping");
       return;
     }
     const newToken = await user.getIdToken(/* forceRefresh= */ true);
-    localStorage.setItem("medlive_id_token", newToken);
-    console.log("[MedLive] Token refreshed successfully");
+    localStorage.setItem("heali_id_token", newToken);
+    console.log("[Heali] Token refreshed successfully");
   } catch (e) {
-    console.error("[MedLive] Token refresh failed:", e);
+    console.error("[Heali] Token refresh failed:", e);
     // If refresh fails, redirect to auth so user can re-sign in
     window.location.href = "/static/auth.html";
   }
@@ -285,7 +285,7 @@ async function registerRemindersIfEnabled() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("medlive_id_token")}`,
+        Authorization: `Bearer ${localStorage.getItem("heali_id_token")}`,
       },
       body: JSON.stringify({
         fcm_token: token,
@@ -296,11 +296,11 @@ async function registerRemindersIfEnabled() {
       }),
     });
     if (registerRes.ok) {
-      localStorage.setItem("medlive_reminders_registered", "1");
-      console.log("[MedLive] Reminders registered");
+      localStorage.setItem("heali_reminders_registered", "1");
+      console.log("[Heali] Reminders registered");
     }
   } catch (e) {
-    console.warn("[MedLive] Reminders registration skipped or failed:", e);
+    console.warn("[Heali] Reminders registration skipped or failed:", e);
   }
 }
 
@@ -736,8 +736,8 @@ CRITICAL RULES:
     // Send a clear deactivation prompt that tells the interpreter agent to
     // transfer control back to the root agent so the companion resumes.
     if (websocket && isGeminiReady) {
-      const companionName = localStorage.getItem("medlive_companion_name") || "Health Companion";
-      const prompt = `[SYSTEM: DEACTIVATE LIVE INTERPRETER MODE. The translation session has ended. You MUST transfer back to the root medlive agent now by calling transfer_to_medlive. Once you are the root agent again, resume your normal role as ${companionName}, the patient's health companion. Briefly acknowledge in ${language} that translation mode is off, then ask how else you can help.]`;
+      const companionName = localStorage.getItem("heali_companion_name") || "Health Companion";
+      const prompt = `[SYSTEM: DEACTIVATE LIVE INTERPRETER MODE. The translation session has ended. You MUST transfer back to the root heali agent now by calling transfer_to_heali. Once you are the root agent again, resume your normal role as ${companionName}, the patient's health companion. Briefly acknowledge in ${language} that translation mode is off, then ask how else you can help.]`;
       websocket.send(JSON.stringify({ type: "text", text: prompt }));
     }
   }
@@ -766,7 +766,7 @@ async function toggleAmbientCamera() {
     if (websocket && isGeminiReady) {
       websocket.send(JSON.stringify({ type: "text", text: "[SYSTEM: Camera has been turned off. Resume normal conversation.]" }));
     }
-    console.log("[MedLive] Ambient camera stopped");
+    console.log("[Heali] Ambient camera stopped");
     return;
   }
 
@@ -801,7 +801,7 @@ async function toggleAmbientCamera() {
   }
 
   if (!isListening) startListening();
-  console.log("[MedLive] Ambient camera started — agent is now visually aware");
+  console.log("[Heali] Ambient camera started — agent is now visually aware");
 }
 
 if (ambientCameraBtn) {
@@ -842,7 +842,7 @@ async function performScan() {
   scanConfirmBtn.style.display = "none";
   scanRetryBtn.style.display = "none";
 
-  const token = localStorage.getItem("medlive_id_token") || "";
+  const token = localStorage.getItem("heali_id_token") || "";
   try {
     const res = await fetch("/api/scan", {
       method: "POST",
@@ -947,19 +947,19 @@ if (scanRetryBtn) {
 
 function connectWebSocket() {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const currentToken = localStorage.getItem("medlive_id_token") || "";
+  const currentToken = localStorage.getItem("heali_id_token") || "";
 
   // Send persona code so the server can fall back to correct language/name
   // when Firestore is unavailable (e.g. demo mode)
   const langToPersona = { Hindi: "hi", Spanish: "es", Kannada: "kn", English: "en" };
   // Read fresh from localStorage so reconnect after a profile-language-change picks up the new value
-  const persona = langToPersona[localStorage.getItem("medlive_language") || language] || "en";
+  const persona = langToPersona[localStorage.getItem("heali_language") || language] || "en";
 
   const queryParams = {
     token: currentToken,
     persona,
   };
-  const savedName = localStorage.getItem("medlive_display_name");
+  const savedName = localStorage.getItem("heali_display_name");
   if (savedName) queryParams.patient_name = savedName;
 
   const query = new URLSearchParams(queryParams).toString();
@@ -968,7 +968,7 @@ function connectWebSocket() {
   websocket = new WebSocket(url);
 
   websocket.onopen = () => {
-    console.log("[MedLive] WebSocket connected to server, waiting for Gemini...");
+    console.log("[Heali] WebSocket connected to server, waiting for Gemini...");
     isConnected = true;
     setStatus("Connecting...", ""); // Gemini Live not ready yet
   };
@@ -978,7 +978,7 @@ function connectWebSocket() {
       const adkEvent = JSON.parse(event.data);
 
       if (adkEvent.type === "ready") {
-        console.log("[MedLive] Gemini Live ready");
+        console.log("[Heali] Gemini Live ready");
         isGeminiReady = true;
 
         if (window.pendingPillPrompt) {
@@ -1006,7 +1006,7 @@ function connectWebSocket() {
 
       // Custom Generative UI Payload Handling
       if (adkEvent.type === "ui_update") {
-        console.log("[MedLive] UI Update received:", adkEvent);
+        console.log("[Heali] UI Update received:", adkEvent);
         handleUIUpdate(adkEvent);
         return;
       }
@@ -1021,22 +1021,22 @@ function connectWebSocket() {
           if (d && (d.data != null) && (typeof d.data === "string" ? d.data.length > 0 : d.data.byteLength > 0)) hasAudio = true;
         }
         if (hasAudio || adkEvent.turnComplete || adkEvent.turn_complete) {
-          console.log("[MedLive] Event from server: hasAudio=" + hasAudio + " turnComplete=" + (adkEvent.turnComplete || adkEvent.turn_complete));
+          console.log("[Heali] Event from server: hasAudio=" + hasAudio + " turnComplete=" + (adkEvent.turnComplete || adkEvent.turn_complete));
         }
       }
 
       handleADKEvent(adkEvent);
     } catch (e) {
-      console.error("[MedLive] Parse error:", e);
+      console.error("[Heali] Parse error:", e);
     }
   };
 
   websocket.onerror = (err) => {
-    console.error("[MedLive] WebSocket error:", err);
+    console.error("[Heali] WebSocket error:", err);
   };
 
   websocket.onclose = (event) => {
-    console.log("[MedLive] WebSocket closed:", event.code, event.reason);
+    console.log("[Heali] WebSocket closed:", event.code, event.reason);
     isConnected = false;
     isGeminiReady = false;
 
@@ -1044,13 +1044,13 @@ function connectWebSocket() {
     if (isTranslateActive) {
       isTranslateActive = false;
       if (interpreterBanner) interpreterBanner.style.display = "none";
-      console.log("[MedLive] Translate mode reset due to WebSocket close");
+      console.log("[Heali] Translate mode reset due to WebSocket close");
     }
 
     if (event.code === 4401 && uid !== "demo_user") {
       // Auth failure — token expired, redirect to auth (skip when using skip-auth-for-testing)
-      console.warn("[MedLive] Auth token rejected, redirecting to auth");
-      localStorage.removeItem("medlive_id_token");
+      console.warn("[Heali] Auth token rejected, redirecting to auth");
+      localStorage.removeItem("heali_id_token");
       window.location.href = "/static/auth.html";
       return;
     }
@@ -1218,10 +1218,10 @@ function appendBookingCard(html) {
 }
 
 function showToast(message) {
-  let toast = document.getElementById("medlive-toast");
+  let toast = document.getElementById("heali-toast");
   if (!toast) {
     toast = document.createElement("div");
-    toast.id = "medlive-toast";
+    toast.id = "heali-toast";
     toast.style.position = "fixed";
     toast.style.bottom = "20px";
     toast.style.left = "50%";
@@ -1286,7 +1286,7 @@ function updateMoodRing(text) {
 
 function handleADKEvent(event) {
   // Show which agent is responding — uses ADK event author field
-  const author = event.author || (event.content && event.content.role === "model" ? "medlive" : null);
+  const author = event.author || (event.content && event.content.role === "model" ? "heali" : null);
   if (author) showAgentBadge(author);
 
   const content = event.content;
@@ -1296,7 +1296,7 @@ function handleADKEvent(event) {
       const audioData = inlineData && (inlineData.data != null) ? String(inlineData.data) : null;
       if (audioData && audioData.length > 0) {
         const mimeType = (inlineData && (inlineData.mimeType || inlineData.mime_type)) || "";
-        console.log("[MedLive] Playing audio chunk, mime:", mimeType || "(none)", "len:", audioData.length);
+        console.log("[Heali] Playing audio chunk, mime:", mimeType || "(none)", "len:", audioData.length);
         setStatus(currentLocale.speaking, "active");
         // Mute mic while agent is speaking to prevent echo feedback loop
         if (audioRecorder && !audioRecorder.isMuted) {
@@ -1310,7 +1310,7 @@ function handleADKEvent(event) {
           if (!window._audioChunkQueue) window._audioChunkQueue = [];
           window._audioChunkQueue.push(audioData);
           if (window._audioChunkQueue.length === 1) {
-            console.log("[MedLive] Audio queued (tap to start listening to hear it)");
+            console.log("[Heali] Audio queued (tap to start listening to hear it)");
           }
         }
       }
@@ -1383,7 +1383,7 @@ function handleADKEvent(event) {
       heroTap.classList.add("interrupted");
       setTimeout(() => heroTap.classList.remove("interrupted"), 600);
     }
-    console.log("[MedLive] Agent interrupted by user — cleared audio and switched to listening");
+    console.log("[Heali] Agent interrupted by user — cleared audio and switched to listening");
   }
 }
 
@@ -1398,7 +1398,7 @@ async function startListening() {
     audioPlayer = new AudioPlayer();
     audioPlayer.onAudioError = (message) => {
       setStatus(message, "");
-      console.warn("[MedLive] Audio error:", message);
+      console.warn("[Heali] Audio error:", message);
     };
     await audioPlayer.initialize();
     // Switch aura from "speaking" → "listening" only after buffer fully drains
@@ -1412,7 +1412,7 @@ async function startListening() {
     // Play any chunks that arrived before we had a player (e.g. greeting response)
     const queued = window._audioChunkQueue ? window._audioChunkQueue.length : 0;
     if (queued) {
-      console.log("[MedLive] Flushing", queued, "queued audio chunks");
+      console.log("[Heali] Flushing", queued, "queued audio chunks");
       while (window._audioChunkQueue && window._audioChunkQueue.length) {
         audioPlayer.playBase64(window._audioChunkQueue.shift());
       }
@@ -1455,12 +1455,12 @@ async function startListening() {
     if (upstreamFlushIntervalId) clearInterval(upstreamFlushIntervalId);
     upstreamFlushIntervalId = setInterval(flushUpstreamBatch, FLUSH_INTERVAL_MS);
     await audioRecorder.start();
-    console.log("[MedLive] Audio recording started");
+    console.log("[Heali] Audio recording started");
     isListening = true;
     if (chatMicBtn) chatMicBtn.classList.add("active");
     setStatus(currentLocale.listening, "listening");
   } catch (e) {
-    console.error("[MedLive] Microphone error:", e);
+    console.error("[Heali] Microphone error:", e);
     setStatus("Mic blocked — check permissions", "");
   }
 }
@@ -1593,7 +1593,7 @@ document.addEventListener("visibilitychange", () => {
           text: `[SYSTEM: User just opened the app after ${hoursAway} hours. Time of day: ${period}. Start a warm ${period} health check-in in ${language}.]`,
         })
       );
-      console.log(`[MedLive] Auto-greeting triggered after ${hoursAway}h inactivity`);
+      console.log(`[Heali] Auto-greeting triggered after ${hoursAway}h inactivity`);
     }
 
     lastActiveTime = Date.now();
@@ -1663,11 +1663,11 @@ function openProfileModal() {
   profileModalLangChanged = false;
 
   // Populate fields from localStorage
-  const currentLang = localStorage.getItem("medlive_language") || "English";
-  const currentVoice = localStorage.getItem("medlive_voice_name") || "Aoede";
-  const currentName = localStorage.getItem("medlive_display_name") || "";
-  const currentComp = localStorage.getItem("medlive_companion_name") || "";
-  const currentAvatarB64 = localStorage.getItem("medlive_avatar") || "";
+  const currentLang = localStorage.getItem("heali_language") || "English";
+  const currentVoice = localStorage.getItem("heali_voice_name") || "Aoede";
+  const currentName = localStorage.getItem("heali_display_name") || "";
+  const currentComp = localStorage.getItem("heali_companion_name") || "";
+  const currentAvatarB64 = localStorage.getItem("heali_avatar") || "";
 
   profileModalSelectedLang = currentLang;
   profileModalSelectedVoice = currentVoice;
@@ -1844,11 +1844,11 @@ async function profileHandlePhotoUpload(event) {
 
 function applyProfileLocally(payload) {
   // Persist to localStorage
-  if (payload.language) localStorage.setItem("medlive_language", payload.language);
-  if (payload.companion_name) localStorage.setItem("medlive_companion_name", payload.companion_name);
-  if (payload.avatar_b64) localStorage.setItem("medlive_avatar", payload.avatar_b64);
-  if (payload.voice_name) localStorage.setItem("medlive_voice_name", payload.voice_name);
-  if (payload.display_name) localStorage.setItem("medlive_display_name", payload.display_name);
+  if (payload.language) localStorage.setItem("heali_language", payload.language);
+  if (payload.companion_name) localStorage.setItem("heali_companion_name", payload.companion_name);
+  if (payload.avatar_b64) localStorage.setItem("heali_avatar", payload.avatar_b64);
+  if (payload.voice_name) localStorage.setItem("heali_voice_name", payload.voice_name);
+  if (payload.display_name) localStorage.setItem("heali_display_name", payload.display_name);
 
   // Update live DOM
   if (payload.companion_name && avatarName) avatarName.textContent = payload.companion_name;
@@ -1888,8 +1888,8 @@ async function saveProfileModal() {
   // Build payload
   const payload = {
     companion_name: companionName,
-    language: profileModalSelectedLang || localStorage.getItem("medlive_language") || "English",
-    voice_name: profileModalSelectedVoice || localStorage.getItem("medlive_voice_name") || "Aoede",
+    language: profileModalSelectedLang || localStorage.getItem("heali_language") || "English",
+    voice_name: profileModalSelectedVoice || localStorage.getItem("heali_voice_name") || "Aoede",
     display_name: displayName,
   };
   if (profileModalNewAvatarB64) payload.avatar_b64 = profileModalNewAvatarB64;
@@ -1910,7 +1910,7 @@ async function saveProfileModal() {
 
   // Auth mode — POST to server
   try {
-    const token = localStorage.getItem("medlive_id_token") || "";
+    const token = localStorage.getItem("heali_id_token") || "";
     const resp = await fetch("/api/auth/profile", {
       method: "POST",
       headers: {
@@ -1988,17 +1988,17 @@ let medScheduleTimesSelected = [];
 
 async function fetchMedications() {
   try {
-    const token = localStorage.getItem("medlive_id_token") || "demo";
+    const token = localStorage.getItem("heali_id_token") || "demo";
     const resp = await fetch("/api/medications", {
       headers: { "Authorization": "Bearer " + token },
     });
     if (!resp.ok) throw new Error("Failed to fetch medications");
     const data = await resp.json();
-    localStorage.setItem("medlive_meds_cache", JSON.stringify(data.medications));
+    localStorage.setItem("heali_meds_cache", JSON.stringify(data.medications));
     return data.medications;
   } catch (e) {
     console.warn("[MedSchedule] fetch failed, using cache", e);
-    const cached = localStorage.getItem("medlive_meds_cache");
+    const cached = localStorage.getItem("heali_meds_cache");
     return cached ? JSON.parse(cached) : [];
   }
 }
@@ -2088,7 +2088,7 @@ async function populateMedList() {
       const medId = btn.dataset.medId;
       if (!medId) return;
       try {
-        const token = localStorage.getItem("medlive_id_token") || "demo";
+        const token = localStorage.getItem("heali_id_token") || "demo";
         await fetch(`/api/medications/${medId}`, {
           method: "DELETE",
           headers: { "Authorization": "Bearer " + token },
@@ -2210,7 +2210,7 @@ function renderSelectedTimes() {
       saveBtn.disabled = true;
       saveBtn.textContent = "Saving...";
       try {
-        const token = localStorage.getItem("medlive_id_token") || "demo";
+        const token = localStorage.getItem("heali_id_token") || "demo";
         const resp = await fetch("/api/medications", {
           method: "POST",
           headers: {
@@ -2260,7 +2260,7 @@ function checkAndRemindMedications() {
   // Only remind when WebSocket is open and Gemini is ready
   if (!websocket || websocket.readyState !== WebSocket.OPEN || !isGeminiReady) return;
 
-  const cached = localStorage.getItem("medlive_meds_cache");
+  const cached = localStorage.getItem("heali_meds_cache");
   if (!cached) return;
 
   let meds;
@@ -2273,11 +2273,11 @@ function checkAndRemindMedications() {
 
   // Load reminded map & prune old dates
   let reminded;
-  try { reminded = JSON.parse(localStorage.getItem("medlive_reminded") || "{}"); } catch { reminded = {}; }
+  try { reminded = JSON.parse(localStorage.getItem("heali_reminded") || "{}"); } catch { reminded = {}; }
   const staleKeys = Object.keys(reminded).filter(k => !k.endsWith(today));
   if (staleKeys.length > 0) {
     staleKeys.forEach(k => delete reminded[k]);
-    localStorage.setItem("medlive_reminded", JSON.stringify(reminded));
+    localStorage.setItem("heali_reminded", JSON.stringify(reminded));
   }
 
   for (const med of meds) {
@@ -2292,10 +2292,10 @@ function checkAndRemindMedications() {
 
       // Mark as reminded
       reminded[key] = Date.now();
-      localStorage.setItem("medlive_reminded", JSON.stringify(reminded));
+      localStorage.setItem("heali_reminded", JSON.stringify(reminded));
 
       // Inject SYSTEM directive — agent speaks the reminder
-      const lang = localStorage.getItem("medlive_language") || "English";
+      const lang = localStorage.getItem("heali_language") || "English";
       const prompt = `[SYSTEM: It is now ${t}. ` +
         `Gently remind the patient that it's time to take their ${med.name}` +
         `${med.dosage ? " (" + med.dosage + ")" : ""}. ` +

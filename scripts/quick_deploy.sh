@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# MedLive Connect — Quick Deploy (no local Docker needed)
+# Heali Connect — Quick Deploy (no local Docker needed)
 # Uses Google Cloud Build to build the image remotely, then deploys to Cloud Run
 # =============================================================================
 # Usage (from project root):
@@ -8,13 +8,13 @@
 # =============================================================================
 set -euo pipefail
 
-PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-medlive-488722}"
+PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-heali-488722}"
 REGION="${GOOGLE_CLOUD_LOCATION:-us-central1}"
-SERVICE_NAME="medlive"
+SERVICE_NAME="heali"
 IMAGE="gcr.io/${PROJECT_ID}/${SERVICE_NAME}"
 
 echo "============================================================"
-echo "  MedLive Connect — Cloud Run Deployment"
+echo "  Heali Connect — Cloud Run Deployment"
 echo "  Project : ${PROJECT_ID}"
 echo "  Region  : ${REGION}"
 echo "============================================================"
@@ -59,25 +59,25 @@ echo "   ✓ APIs enabled"
 echo "3️⃣  Provisioning Secret Manager secrets..."
 
 # Google API Key
-if ! gcloud secrets describe medlive-google-api-key --project "${PROJECT_ID}" &>/dev/null; then
+if ! gcloud secrets describe heali-google-api-key --project "${PROJECT_ID}" &>/dev/null; then
   if [ -z "${GOOGLE_API_KEY:-}" ]; then
     echo "   ⚠️  GOOGLE_API_KEY not set — skipping (add it manually to Secret Manager)"
   else
-    echo -n "${GOOGLE_API_KEY}" | gcloud secrets create medlive-google-api-key \
+    echo -n "${GOOGLE_API_KEY}" | gcloud secrets create heali-google-api-key \
       --data-file=- --project "${PROJECT_ID}" --quiet
-    echo "   ✓ Created secret: medlive-google-api-key"
+    echo "   ✓ Created secret: heali-google-api-key"
   fi
 else
-  echo "   ✓ Secret exists: medlive-google-api-key"
+  echo "   ✓ Secret exists: heali-google-api-key"
 fi
 
 # Firebase Admin SDK
 FIREBASE_CREDS="${GOOGLE_APPLICATION_CREDENTIALS:-credentials/firebase-admin-sdk.json}"
-if ! gcloud secrets describe medlive-firebase-admin --project "${PROJECT_ID}" &>/dev/null; then
+if ! gcloud secrets describe heali-firebase-admin --project "${PROJECT_ID}" &>/dev/null; then
   if [ -f "${FIREBASE_CREDS}" ]; then
-    gcloud secrets create medlive-firebase-admin \
+    gcloud secrets create heali-firebase-admin \
       --data-file="${FIREBASE_CREDS}" --project "${PROJECT_ID}" --quiet
-    echo "   ✓ Created secret: medlive-firebase-admin"
+    echo "   ✓ Created secret: heali-firebase-admin"
   else
     echo "   ⚠️  Firebase credentials not found at ${FIREBASE_CREDS}"
     echo "       Download from Firebase Console → Project Settings → Service Accounts"
@@ -85,23 +85,23 @@ if ! gcloud secrets describe medlive-firebase-admin --project "${PROJECT_ID}" &>
     exit 1
   fi
 else
-  echo "   ✓ Secret exists: medlive-firebase-admin"
+  echo "   ✓ Secret exists: heali-firebase-admin"
 fi
 
 # Reminders secret
-if ! gcloud secrets describe medlive-reminders-secret --project "${PROJECT_ID}" &>/dev/null; then
+if ! gcloud secrets describe heali-reminders-secret --project "${PROJECT_ID}" &>/dev/null; then
   REMINDER_SECRET="${REMINDERS_TRIGGER_SECRET:-$(openssl rand -hex 32)}"
-  echo -n "${REMINDER_SECRET}" | gcloud secrets create medlive-reminders-secret \
+  echo -n "${REMINDER_SECRET}" | gcloud secrets create heali-reminders-secret \
     --data-file=- --project "${PROJECT_ID}" --quiet
-  echo "   ✓ Created secret: medlive-reminders-secret"
+  echo "   ✓ Created secret: heali-reminders-secret"
 else
-  echo "   ✓ Secret exists: medlive-reminders-secret"
+  echo "   ✓ Secret exists: heali-reminders-secret"
 fi
 
 # Grant Cloud Run SA access to secrets
 PROJECT_NUMBER=$(gcloud projects describe "${PROJECT_ID}" --format='value(projectNumber)')
 CR_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
-for SECRET in medlive-firebase-admin medlive-google-api-key medlive-reminders-secret; do
+for SECRET in heali-firebase-admin heali-google-api-key heali-reminders-secret; do
   gcloud secrets add-iam-policy-binding "${SECRET}" \
     --member="serviceAccount:${CR_SA}" \
     --role="roles/secretmanager.secretAccessor" \
@@ -138,7 +138,7 @@ gcloud run deploy "${SERVICE_NAME}" \
   --memory 2Gi \
   --cpu 2 \
   --set-env-vars "GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},GOOGLE_GENAI_USE_VERTEXAI=FALSE,MEDLIVE_MODEL=gemini-live-2.5-flash-native-audio,USE_FIRESTORE=true,GOOGLE_APPLICATION_CREDENTIALS=/secrets/firebase-admin-sdk.json" \
-  --set-secrets "GOOGLE_API_KEY=medlive-google-api-key:latest,/secrets/firebase-admin-sdk.json=medlive-firebase-admin:latest,REMINDERS_TRIGGER_SECRET=medlive-reminders-secret:latest" \
+  --set-secrets "GOOGLE_API_KEY=heali-google-api-key:latest,/secrets/firebase-admin-sdk.json=heali-firebase-admin:latest,REMINDERS_TRIGGER_SECRET=heali-reminders-secret:latest" \
   --project "${PROJECT_ID}"
 
 # ---------------------------------------------------------------------------
@@ -154,7 +154,7 @@ gcloud run services update "${SERVICE_NAME}" \
 
 echo ""
 echo "================================================================"
-echo "  ✅  MedLive Connect deployed successfully!"
+echo "  ✅  Heali Connect deployed successfully!"
 echo "      URL: ${SERVICE_URL}"
 echo "================================================================"
 echo ""

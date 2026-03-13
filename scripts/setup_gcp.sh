@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # ---------------------------------------------------------------------------
-# MedLive — One-Time GCP Project Setup
+# Heali — One-Time GCP Project Setup
 # Run this ONCE before first deploy.
 # Usage: bash scripts/setup_gcp.sh
 # ---------------------------------------------------------------------------
 set -euo pipefail
 
-PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-medlive-488722}"
+PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-heali-488722}"
 REGION="${GOOGLE_CLOUD_LOCATION:-us-central1}"
 
-echo "🚀 MedLive GCP Setup — project: ${PROJECT_ID}, region: ${REGION}"
+echo "🚀 Heali GCP Setup — project: ${PROJECT_ID}, region: ${REGION}"
 echo ""
 
 # ---------------------------------------------------------------------------
@@ -65,28 +65,28 @@ if [ ! -f "${FIREBASE_CREDS_FILE}" ]; then
   exit 1
 fi
 
-if gcloud secrets describe medlive-firebase-admin --project "${PROJECT_ID}" &>/dev/null; then
-  echo "   ✓ Secret medlive-firebase-admin already exists"
+if gcloud secrets describe heali-firebase-admin --project "${PROJECT_ID}" &>/dev/null; then
+  echo "   ✓ Secret heali-firebase-admin already exists"
 else
-  gcloud secrets create medlive-firebase-admin \
+  gcloud secrets create heali-firebase-admin \
     --data-file="${FIREBASE_CREDS_FILE}" \
     --project "${PROJECT_ID}"
-  echo "   ✓ Secret medlive-firebase-admin created"
+  echo "   ✓ Secret heali-firebase-admin created"
 fi
 
 # Google API Key
 if [ -z "${GOOGLE_API_KEY:-}" ]; then
   echo "   ⚠️  GOOGLE_API_KEY not set in environment. Skipping API key secret."
   echo "   Set it in .env and re-run, or add manually:"
-  echo "   echo -n 'YOUR_KEY' | gcloud secrets create medlive-google-api-key --data-file=-"
+  echo "   echo -n 'YOUR_KEY' | gcloud secrets create heali-google-api-key --data-file=-"
 else
-  if gcloud secrets describe medlive-google-api-key --project "${PROJECT_ID}" &>/dev/null; then
-    echo "   ✓ Secret medlive-google-api-key already exists"
+  if gcloud secrets describe heali-google-api-key --project "${PROJECT_ID}" &>/dev/null; then
+    echo "   ✓ Secret heali-google-api-key already exists"
   else
-    echo -n "${GOOGLE_API_KEY}" | gcloud secrets create medlive-google-api-key \
+    echo -n "${GOOGLE_API_KEY}" | gcloud secrets create heali-google-api-key \
       --data-file=- \
       --project "${PROJECT_ID}"
-    echo "   ✓ Secret medlive-google-api-key created"
+    echo "   ✓ Secret heali-google-api-key created"
   fi
 fi
 
@@ -97,13 +97,13 @@ if [ -z "${TRIGGER_SECRET}" ]; then
   echo "   ℹ️  Generated REMINDERS_TRIGGER_SECRET: ${TRIGGER_SECRET}"
   echo "   Add this to your .env file."
 fi
-if gcloud secrets describe medlive-reminders-secret --project "${PROJECT_ID}" &>/dev/null; then
-  echo "   ✓ Secret medlive-reminders-secret already exists"
+if gcloud secrets describe heali-reminders-secret --project "${PROJECT_ID}" &>/dev/null; then
+  echo "   ✓ Secret heali-reminders-secret already exists"
 else
-  echo -n "${TRIGGER_SECRET}" | gcloud secrets create medlive-reminders-secret \
+  echo -n "${TRIGGER_SECRET}" | gcloud secrets create heali-reminders-secret \
     --data-file=- \
     --project "${PROJECT_ID}"
-  echo "   ✓ Secret medlive-reminders-secret created"
+  echo "   ✓ Secret heali-reminders-secret created"
 fi
 
 # ---------------------------------------------------------------------------
@@ -113,7 +113,7 @@ echo "5️⃣  Granting Secret Manager access to Cloud Run service account..."
 PROJECT_NUMBER=$(gcloud projects describe "${PROJECT_ID}" --format='value(projectNumber)')
 CR_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
 
-for SECRET in medlive-firebase-admin medlive-google-api-key medlive-reminders-secret; do
+for SECRET in heali-firebase-admin heali-google-api-key heali-reminders-secret; do
   gcloud secrets add-iam-policy-binding "${SECRET}" \
     --member="serviceAccount:${CR_SA}" \
     --role="roles/secretmanager.secretAccessor" \
@@ -131,15 +131,15 @@ APP_URL="${MEDLIVE_APP_URL:-}"
 if [ -z "${APP_URL}" ]; then
   echo "   ⚠️  MEDLIVE_APP_URL not set. Skipping Cloud Scheduler setup."
   echo "   After deploy, get the URL then run:"
-  echo "   gcloud scheduler jobs create http medlive-reminders \\"
+  echo "   gcloud scheduler jobs create http heali-reminders \\"
   echo "     --schedule='*/15 * * * *' --uri='<APP_URL>/api/reminders/trigger' \\"
   echo "     --message-body='' --headers='Authorization=Bearer <SECRET>' \\"
   echo "     --location=${REGION}"
 else
-  if gcloud scheduler jobs describe medlive-reminders --location "${REGION}" --project "${PROJECT_ID}" &>/dev/null; then
+  if gcloud scheduler jobs describe heali-reminders --location "${REGION}" --project "${PROJECT_ID}" &>/dev/null; then
     echo "   ✓ Cloud Scheduler job already exists"
   else
-    gcloud scheduler jobs create http medlive-reminders \
+    gcloud scheduler jobs create http heali-reminders \
       --schedule="*/15 * * * *" \
       --uri="${APP_URL}/api/reminders/trigger" \
       --message-body="" \

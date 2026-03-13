@@ -28,7 +28,7 @@ def emit_ui_update(target: str, data: dict, tool_context=None) -> dict:
 
 
 def navigate_to_page(page: str, tool_context=None) -> dict:
-    """Navigate the user's MedLive app to a specific page.
+    """Navigate the user's Heali app to a specific page.
 
     Use this when the user needs to move to a feature page with
     specialised UI (e.g. exercise camera, food scanner).

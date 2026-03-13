@@ -1,4 +1,4 @@
-"""MedLive FastAPI Application.
+"""Heali FastAPI Application.
 
 WebSocket server for bidirectional voice/video streaming with Gemini Live API
 via Google ADK. Based on the ADK bidi-demo reference pattern.
@@ -88,7 +88,7 @@ def _verify_firebase_token(token: str) -> dict:
 # Phase 1: Application Initialization
 # ---------------------------------------------------------------------------
 
-app = FastAPI(title="MedLive", description="Real-time AI Health Guardian")
+app = FastAPI(title="Heali", description="Real-time AI Health Guardian")
 
 # CORS: allow React dev server + production origins
 app.add_middleware(
@@ -335,7 +335,7 @@ async def handle_medication_reminder(request: Request):
             body=f"It's time to take your {medication_name}.",
         ),
         data={
-            "action": "open_medlive",
+            "action": "open_heali",
             "proactive_prompt": proactive_msg
         },
         token=fcm_token,

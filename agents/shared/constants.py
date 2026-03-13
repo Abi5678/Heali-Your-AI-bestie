@@ -1,4 +1,4 @@
-"""Shared constants for MedLive agents."""
+"""Shared constants for Heali agents."""
 
 import os
 
@@ -12,7 +12,7 @@ LIVE_MODEL = os.getenv(
 ANALYSIS_MODEL = "gemini-2.0-flash"
 
 # Application name (used in ADK session service)
-APP_NAME = "medlive"
+APP_NAME = "heali"
 
 # ---------------------------------------------------------------------------
 # Red Line Emergency Protocol — hardcoded safety keywords
