@@ -6,7 +6,8 @@ import {
 import AppLayout from "@/components/AppLayout";
 import StatCard from "@/components/StatCard";
 import { useAuth } from "@/contexts/AuthContext";
-import { getDashboard, getMedications } from "@/lib/api";
+import { getDashboard, getMedications, getProfile, logMedicationTaken, logVital } from "@/lib/api";
+import { toast } from "@/hooks/use-toast";
 
 // Fallback data when backend is unavailable
 const FALLBACK_MEDICATIONS = [
@@ -42,6 +43,7 @@ const Dashboard = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [medications, setMedications] = useState<typeof FALLBACK_MEDICATIONS>(FALLBACK_MEDICATIONS);
   const [loading, setLoading] = useState(true);
+  const [profileName, setProfileName] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -71,6 +73,13 @@ const Dashboard = () => {
             );
           }
         }
+
+        // Fetch Firestore profile name for consistent greeting
+        try {
+          const profileData = await getProfile(token) as { name?: string; display_name?: string } | null;
+          const name = profileData?.name || profileData?.display_name || null;
+          if (name) setProfileName(name);
+        } catch { /* ignore */ }
       } catch (err) {
         console.warn("Dashboard fetch failed, using fallback data:", err);
       } finally {
@@ -79,6 +88,51 @@ const Dashboard = () => {
     }
     fetchData();
   }, [user, getIdToken]);
+
+  const handleMarkAsTaken = async (medName: string) => {
+    try {
+      const token = await getIdToken();
+      if (!token) return;
+      await logMedicationTaken(medName, token);
+      setMedications(prev => prev.map(m => 
+        m.name.includes(medName) ? { ...m, status: "taken" } : m
+      ));
+      toast({
+        title: "Medication Logged",
+        description: `${medName} has been marked as taken.`,
+      });
+    } catch (err) {
+      console.error("Failed to log medication:", err);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to log medication. Please try again.",
+      });
+    }
+  };
+
+  const handleLogVital = async (type: string, unit: string) => {
+    const value = prompt(`Enter ${type.replace("_", " ")} reading (${unit}):`);
+    if (!value) return;
+
+    try {
+      const token = await getIdToken();
+      if (!token) return;
+      await logVital(type, value, unit, token);
+      toast({
+        title: "Vital Logged",
+        description: `New ${type.replace("_", " ")} reading logged: ${value} ${unit}`,
+      });
+      // Optionally refresh data but mock mode won't show it immediately anyway
+    } catch (err) {
+      console.error("Failed to log vital:", err);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to log vital. Please try again.",
+      });
+    }
+  };
 
   const adherenceScore = data?.adherence?.score ?? 94;
   const adherenceRating = data?.adherence?.rating ?? "Good";
@@ -121,7 +175,7 @@ const Dashboard = () => {
         <h1 className="font-display text-5xl font-bold tracking-tight text-foreground lg:text-7xl">
           {greeting()},
           <br />
-          <em className="text-primary">{user?.displayName || "Amma"}</em>
+          <em className="text-primary">{profileName || user?.displayName || "there"}</em>
         </h1>
         <div className="rule-thick mt-6 mb-8 max-w-32" />
         <p className="max-w-lg text-lg text-muted-foreground">
@@ -207,6 +261,14 @@ const Dashboard = () => {
                     {med.status}
                   </p>
                 </div>
+                {med.status !== "taken" && (
+                  <button
+                    onClick={() => handleMarkAsTaken(med.name)}
+                    className="ml-4 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-primary transition-colors hover:bg-primary/20"
+                  >
+                    Mark as Taken
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -216,7 +278,15 @@ const Dashboard = () => {
         <div className="rounded-lg border border-border bg-card p-6">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="font-display text-2xl font-bold tracking-tight">Current Vitals</h2>
-            <TrendingUp size={18} strokeWidth={1.5} className="text-primary" />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => handleLogVital("blood_pressure", "mmHg")}
+                className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-primary transition-colors hover:bg-primary/20"
+              >
+                Add Reading
+              </button>
+              <TrendingUp size={18} strokeWidth={1.5} className="text-primary" />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             {vitals.map((v) => (

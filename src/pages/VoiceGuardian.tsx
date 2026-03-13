@@ -147,6 +147,69 @@ function renderUICard(event: UIEvent, index: number) {
     );
   }
 
+  if (target === "symptom_logged" || target === "symptoms_noted") {
+    const data = event.data as Record<string, unknown>;
+    return (
+      <motion.div
+        key={`ui-${index}`}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4"
+      >
+        <Heart size={20} className="mt-0.5 shrink-0 text-amber-500" />
+        <div className="flex-1">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            Symptoms Recorded
+          </p>
+          <p className="text-sm font-medium">
+            {data?.symptoms
+              ? `Noted: ${String(data.symptoms)}`
+              : "Your symptoms have been recorded"}
+          </p>
+          {data?.next_steps && (
+            <div className="mt-2 space-y-1">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-amber-600">Next Steps</p>
+              <p className="text-xs text-muted-foreground">{String(data.next_steps)}</p>
+            </div>
+          )}
+          {data?.followup_scheduled && (
+            <p className="mt-1 text-xs text-amber-600">
+              ⏰ Follow-up check-in scheduled
+            </p>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (target === "otc_medication_logged") {
+    const data = event.data as Record<string, unknown>;
+    return (
+      <motion.div
+        key={`ui-${index}`}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex items-start gap-3 rounded-lg border border-border bg-secondary/60 p-4"
+      >
+        <Pill size={20} className="mt-0.5 shrink-0 text-muted-foreground" />
+        <div className="flex-1">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            One-time Intake Noted
+          </p>
+          <p className="text-sm font-medium">
+            {data?.name as string}
+            {data?.dose ? ` · ${data.dose as string}` : ""}
+            {data?.reason ? ` · for ${data.reason as string}` : ""}
+            {data?.time ? ` · ${data.time as string}` : ""}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Not added to your regular medication schedule.
+          </p>
+        </div>
+      </motion.div>
+    );
+  }
+
   if (target === "booking_emergency" || target === "emergency_alert") {
     return (
       <motion.div
@@ -251,6 +314,7 @@ const VoiceGuardian = () => {
     sendImage,
     clearTranscript,
     avatarB64,
+    companionName,
   } = useVoiceGuardian({
     userId: user?.uid,
     token: firebaseToken,
@@ -530,7 +594,16 @@ const VoiceGuardian = () => {
             )}
           </div>
 
-          {/* Speaking indicator */}
+          {/* Companion name label */}
+          <div className="mt-3 mb-2 flex items-center justify-center gap-2">
+            {avatarB64 && (
+              <span className="inline-block h-2 w-2 rounded-full bg-green-400 shadow-sm shadow-green-400/60" />
+            )}
+            <span className="text-sm font-semibold tracking-wide text-foreground">
+              {companionName}
+            </span>
+          </div>
+
           {isSpeaking && (
             <div className="mb-4 flex items-center justify-center gap-1">
               {[...Array(5)].map((_, i) => (

@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
+import { getProfile } from "@/lib/api";
 
 const FEATURES = [
   { to: "/voice", icon: Mic, label: "Voice Guardian", description: "Talk to your AI health companion", primary: true },
@@ -30,7 +32,22 @@ const FEATURES = [
 
 const Welcome = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, getIdToken } = useAuth();
+  const [profileName, setProfileName] = useState<string | null>(null);
+
+  // Fetch Firestore profile name so it matches the Profile page
+  useEffect(() => {
+    getIdToken().then((token) => {
+      if (!token) return;
+      getProfile(token)
+        .then((p) => {
+          const profile = p as { name?: string; display_name?: string } | null;
+          const name = profile?.name || profile?.display_name || null;
+          if (name) setProfileName(name);
+        })
+        .catch(() => {/* silently ignore */});
+    });
+  }, [getIdToken]);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -39,7 +56,8 @@ const Welcome = () => {
     return "Good evening";
   };
 
-  const displayName = user?.displayName || user?.email?.split("@")[0] || "there";
+  // Priority: Firestore profile name → Firebase Auth displayName → email prefix
+  const displayName = profileName || user?.displayName || user?.email?.split("@")[0] || "there";
 
   return (
     <AppLayout>

@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import uuid
+from datetime import datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -71,8 +72,11 @@ if not firebase_admin._apps:
     _cred_path = os.getenv(
         "GOOGLE_APPLICATION_CREDENTIALS", "credentials/firebase-admin-sdk.json"
     )
-    firebase_admin.initialize_app(fb_credentials.Certificate(_cred_path))
-    logger.info("Firebase Admin SDK initialized")
+    try:
+        firebase_admin.initialize_app(fb_credentials.Certificate(_cred_path))
+        logger.info("Firebase Admin SDK initialized")
+    except Exception as e:
+        logger.warning("Firebase Admin SDK failed to initialize: %s. Authentication features will be limited.", e)
 
 
 def _verify_firebase_token(token: str) -> dict:
@@ -89,12 +93,7 @@ app = FastAPI(title="MedLive", description="Real-time AI Health Guardian")
 # CORS: allow React dev server + production origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:8080",
-        "http://localhost:8082",  # Vite dev server (vite.config.ts port)
-        "http://localhost:3000",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -227,10 +226,12 @@ async def get_profile(authorization: str = Header(default=None)):
     fs = FirestoreService.get_instance()
 
     if not fs.is_available:
-        raise HTTPException(status_code=503, detail="Firestore unavailable")
-
-    profile = await fs.get_or_create_profile(uid)
-    health = await fs.get_health_restrictions(uid)
+        from agents.shared.mock_data import PATIENT_PROFILE as _mock_profile
+        profile = _mock_profile
+        health = {"allergies": [], "diet_type": "", "current_medications": ""}
+    else:
+        profile = await fs.get_or_create_profile(uid)
+        health = await fs.get_health_restrictions(uid)
 
     response_data = profile or {}
 
@@ -268,7 +269,8 @@ async def save_profile(
     fs = FirestoreService.get_instance()
 
     if not fs.is_available:
-        raise HTTPException(status_code=503, detail="Firestore unavailable")
+        logger.info("Mock mode: skipping profile save for uid=%s", uid)
+        return JSONResponse({"status": "ok", "message": "Changes skipped in mock mode"})
 
     # Only allow safe profile fields (block internal Firestore fields)
     allowed_profile = {
@@ -443,6 +445,84 @@ async def get_dashboard_data(
     })
 
 
+@app.post("/api/vitals")
+async def log_vital(
+    body: dict,
+    authorization: str = Header(default=None),
+):
+    """Log a health vital (blood pressure, heart rate, etc.)"""
+    uid = _extract_uid(authorization)
+    fs = FirestoreService.get_instance()
+    
+    vital_type = body.get("type", "blood_pressure")
+    value = body.get("value", "")
+    unit = body.get("unit", "")
+    
+    entry = {
+        "type": vital_type,
+        "value": value,
+        "unit": unit,
+        "date": datetime.now().strftime("%Y-%m-%d"),
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    if fs.is_available:
+        await fs.add_vitals_entry(uid, entry)
+    else:
+        logger.info("Mock mode: skipping vital log for uid=%s", uid)
+        
+    return JSONResponse({"status": "ok", "entry": entry})
+
+
+@app.post("/api/symptoms")
+async def log_symptom(
+    body: dict,
+    authorization: str = Header(default=None),
+):
+    """Log reported symptoms from the patient during a Voice Guardian session."""
+    uid = _extract_uid(authorization)
+    fs = FirestoreService.get_instance()
+
+    symptoms = body.get("symptoms", "")
+    severity = body.get("severity", "mild")
+    next_steps = body.get("next_steps", "")
+    followup_scheduled = body.get("followup_scheduled", False)
+
+    entry = {
+        "symptoms": symptoms,
+        "severity": severity,
+        "next_steps": next_steps,
+        "followup_scheduled": followup_scheduled,
+        "date": datetime.now().strftime("%Y-%m-%d"),
+        "time": datetime.now().strftime("%H:%M"),
+        "timestamp": datetime.now().isoformat(),
+        "source": "voice_guardian",
+    }
+
+    if fs.is_available:
+        try:
+            await fs.db.collection("users").document(uid).collection("symptoms").add(entry)
+            logger.info("Symptom logged for uid=%s: %s", uid, symptoms)
+        except Exception as exc:
+            logger.warning("Failed to save symptom for uid=%s: %s", uid, exc)
+    else:
+        logger.info("Mock mode: symptom noted for uid=%s — %s", uid, symptoms)
+
+    return JSONResponse({
+        "status": "ok",
+        "entry": entry,
+        "ui_event": {
+            "target": "symptom_logged",
+            "data": {
+                "symptoms": symptoms,
+                "severity": severity,
+                "next_steps": next_steps,
+                "followup_scheduled": followup_scheduled,
+            }
+        }
+    })
+
+
 # ---------------------------------------------------------------------------
 # Phase 10: Appointments API
 # ---------------------------------------------------------------------------
@@ -534,6 +614,10 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
     voice_name = "Aoede" # Default
     onboarding_complete = False
     patient_name = ""
+    patient_conditions = ""
+    patient_medications = ""
+    patient_allergies = ""
+    patient_blood_type = ""
 
     if fs.is_available:
         try:
@@ -544,6 +628,17 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                 voice_name = profile.get("voice_name", voice_name)
                 onboarding_complete = profile.get("onboarding_complete", False)
                 patient_name = profile.get("name", "")
+                patient_conditions = profile.get("conditions", "")
+                patient_blood_type = profile.get("blood_type", "")
+            # Also load health restrictions (medications, allergies, diet)
+            try:
+                health = await fs.get_health_restrictions(uid)
+                if health:
+                    allergies_list = health.get("allergies", [])
+                    patient_allergies = ", ".join(allergies_list) if isinstance(allergies_list, list) else str(allergies_list)
+                    patient_medications = health.get("current_medications", "")
+            except Exception:
+                pass
         except Exception as e:
             logger.warning("Could not load profile for uid=%s: %s", uid, e)
 
@@ -589,6 +684,11 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
             "companion_name": companion_name,
             "onboarding_complete": onboarding_complete,
             "patient_name": patient_name,
+            # Health context — allows agents to personalize advice
+            "patient_conditions": patient_conditions,
+            "patient_medications": patient_medications,
+            "patient_allergies": patient_allergies,
+            "patient_blood_type": patient_blood_type,
         },
     )
 
@@ -604,28 +704,34 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
         "Nurse Maya": "avatar-nurse-maya.png",
     }
     avatar_b64 = None
-    if fs.is_available:
+    assets_dir = Path(__file__).parent.parent / "src" / "assets"
+
+    # ALWAYS try preset avatar first — works in demo/mock mode too (no Firestore needed)
+    if companion_name in PRESET_AVATAR_FILES:
+        preset_path = assets_dir / PRESET_AVATAR_FILES[companion_name]
+        if preset_path.exists():
+            try:
+                avatar_bytes = preset_path.read_bytes()
+                b64 = base64.b64encode(avatar_bytes).decode("utf-8")
+                avatar_b64 = f"data:image/png;base64,{b64}"
+                logger.info("Using preset avatar for companion_name=%s", companion_name)
+                if fs.is_available:
+                    try:
+                        await fs.save_user_profile(uid, {"avatar_b64": avatar_b64})
+                    except Exception:
+                        pass
+            except Exception as e:
+                logger.warning("Failed to read preset avatar: %s", e)
+
+    # Firestore fallback: use stored avatar or generate one if no preset matched
+    if not avatar_b64 and fs.is_available:
         try:
-            profile = await fs.get_patient_profile(uid)
-            # When companion_name matches a preset, always use the preset avatar so we never show
-            # a stale avatar from a previous persona. This fixes the inconsistency when users
-            # switch from custom to preset or between personas.
-            if companion_name in PRESET_AVATAR_FILES:
-                assets_dir = Path(__file__).parent.parent / "src" / "assets"
-                preset_path = assets_dir / PRESET_AVATAR_FILES[companion_name]
-                if preset_path.exists():
-                    avatar_bytes = preset_path.read_bytes()
-                    b64 = base64.b64encode(avatar_bytes).decode("utf-8")
-                    avatar_b64 = f"data:image/png;base64,{b64}"
-                    await fs.save_user_profile(uid, {"avatar_b64": avatar_b64})
-                    logger.info("Using preset avatar for companion_name=%s", companion_name)
-            if not avatar_b64 and profile and profile.get("avatar_b64"):
-                avatar_b64 = profile["avatar_b64"]
+            stored_profile = await fs.get_patient_profile(uid)
+            if stored_profile and stored_profile.get("avatar_b64"):
+                avatar_b64 = stored_profile["avatar_b64"]
             if not avatar_b64:
-                # Generate a friendly random avatar based on companion name
                 from app.api.avatar import generate_avatar
-                from fastapi import Form
-                logger.info(f"Generating new avatar for {companion_name}...")
+                logger.info("Generating new avatar for %s...", companion_name)
                 avatar_response = await generate_avatar(
                     companion_name=companion_name,
                     avatar_description="A friendly medical professional with a warm smile"
@@ -636,12 +742,12 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                     if avatar_b64:
                         await fs.save_user_profile(uid, {"avatar_b64": avatar_b64})
         except Exception as e:
-            logger.warning(f"Avatar generation/retrieval failed: {e}")
+            logger.warning("Avatar generation/retrieval failed: %s", e)
 
     # Dispatch avatar to frontend immediately
     if avatar_b64:
         await websocket.send_text(json.dumps({
-            "target": "avatar_update", 
+            "target": "avatar_update",
             "avatar_b64": avatar_b64,
             "companion_name": companion_name
         }))

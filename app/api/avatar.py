@@ -68,7 +68,7 @@ UPLOAD_PHOTO_PROMPT_TEMPLATE = """PRESERVE from the original photo:
 TRANSFORM with this style:
 - Digital illustration style, clean lines, vibrant saturated colors
 - Add a Casual Genz wear attire, Tech Wear
-- Suit color: BLUE
+- Suit color: {suit_color}
 - Background: Pure solid white (#FFFFFF) - no gradients or elements
 - Frame: Head and shoulders, 3/4 view
 - Lighting: Soft diffused studio lighting
@@ -77,15 +77,17 @@ TRANSFORM with this style:
 The result should be clearly recognizable as THIS specific person, but illustrated as a casual happy genz tech worker.
 CRITICAL INSTRUCTION: DO NOT include any text, words, UI elements, or prompt descriptions in the image. The image must ONLY contain the character artwork."""
 
-RANDOM_AVATAR_PROMPT_TEMPLATE = (
-    "A friendly {companion_name} character. {avatar_description}. "
-    "Art style: Modern animated movie character (Pixar/Dreamworks aesthetic), "
-    "clean lines, vibrant saturated colors. Head and shoulders, 3/4 view, warm caring smile, "
-    "soft diffused studio lighting. purely solid white (#FFFFFF) background — absolutely no "
-    "gradients, shadows, or background elements. "
-    "Attire: Casual Genz tech wear, suit color BLUE. "
-    "CRITICAL INSTRUCTION: DO NOT include any text, words, UI elements, or prompt descriptions in the image. The image must ONLY contain the character artwork."
-)
+RANDOM_AVATAR_PROMPT_TEMPLATE = """A friendly {companion_name} character. {avatar_description}
+Digital illustration style, clean lines, vibrant saturated colors.
+Add a Casual Genz wear attire, Tech Wear.
+Suit color: {suit_color}
+Background: Pure solid white (#FFFFFF) - no gradients or elements
+Frame: Head and shoulders, 3/4 view
+Lighting: Soft diffused studio lighting
+Art style: Modern animated movie character (Pixar/Dreamworks aesthetic)
+
+The character should be a casual happy genz tech worker.
+CRITICAL INSTRUCTION: DO NOT include any text, words, UI elements, or prompt descriptions in the image. The image must ONLY contain the character artwork."""
 
 
 # ---------------------------------------------------------------------------
@@ -112,7 +114,7 @@ async def generate_avatar(
             photo_bytes = await photo.read()
             # Prevent empty description from breaking prompt
             desc = avatar_description.strip() or "Wearing casual tech wear in navy blue"
-            prompt = UPLOAD_PHOTO_PROMPT_TEMPLATE.format(avatar_description=desc)
+            prompt = UPLOAD_PHOTO_PROMPT_TEMPLATE.format(suit_color="navy blue")
             logger.info(
                 "Avatar: Gemini photo-to-avatar for '%s', desc='%s', photo=%d bytes",
                 companion_name,
@@ -157,10 +159,11 @@ async def generate_avatar(
 
         else:
             # --- Text → Imagen avatar (random generation) ---
-            desc = avatar_description.strip() or "Wearing casual tech wear in navy blue"
+            desc = avatar_description.strip() or "A happy tech professional with a warm smile"
             prompt = RANDOM_AVATAR_PROMPT_TEMPLATE.format(
                 companion_name=companion_name,
-                avatar_description=desc
+                avatar_description=desc,
+                suit_color="navy blue"
             )
             logger.info("Avatar: text-to-image for '%s' with desc '%s'", companion_name, desc)
 

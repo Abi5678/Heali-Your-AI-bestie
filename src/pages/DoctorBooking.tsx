@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Calendar, Star, CheckCircle2, Loader2, Mic, Hand } from "lucide-react";
+import { MapPin, Calendar, Star, CheckCircle2, Loader2, Mic, Hand, Search } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAppointments } from "@/lib/api";
@@ -30,6 +30,7 @@ const DoctorBooking = () => {
   ]);
   const [hospitals, setHospitals] = useState(FALLBACK_HOSPITALS);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Listen for booking UI events from voice agent
   const bookingHospitals = useUIEvent("booking_hospitals");
@@ -153,9 +154,26 @@ const DoctorBooking = () => {
       )}
 
       {/* Hospitals */}
-      <h2 className="mb-4 font-display text-2xl font-bold tracking-tight">Nearby Hospitals</h2>
+      <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+        <h2 className="font-display text-2xl font-bold tracking-tight">Nearby Hospitals</h2>
+        <div className="relative max-w-sm w-full md:w-64">
+          <Search className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground" size={18} />
+          <input
+            type="text"
+            placeholder="Search hospitals or specialties..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-full border border-border bg-card py-2 pr-4 pl-10 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+          />
+        </div>
+      </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {hospitals.map((h, i) => (
+        {hospitals
+          .filter(h => 
+            h.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            h.specialties.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()))
+          )
+          .map((h, i) => (
           <div
             key={i}
             onClick={() => setSelectedHospital(i)}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ArrowRight, ArrowLeft, Wand2, Loader2, Upload, User } from "lucide-react";
 import { useRef } from "react";
@@ -23,7 +23,14 @@ async function imageUrlToBase64(url: string): Promise<string> {
 
 const Onboarding = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState<Step>("welcome");
+  const [searchParams] = useSearchParams();
+  const [step, setStep] = useState<Step>(() => {
+    // If ?step=select is passed (e.g. from Profile "Reset Companion"), skip welcome
+    const initialStep = searchParams.get("step") as Step | null;
+    return initialStep && ["select", "custom", "details", "confirm"].includes(initialStep)
+      ? initialStep
+      : "welcome";
+  });
   const [selected, setSelected] = useState<Persona | null>(null);
   const [customName, setCustomName] = useState("");
   const [customDescription, setCustomDescription] = useState("");
@@ -51,7 +58,6 @@ const Onboarding = () => {
   };
 
   const handleGenerateAvatar = async () => {
-    if (!customDescription.trim()) return;
     setGenerating(true);
     try {
       const formData = new FormData();
@@ -250,7 +256,14 @@ const Onboarding = () => {
             className="w-full max-w-3xl"
           >
             <button
-              onClick={() => setStep("welcome")}
+              onClick={() => {
+                // If we came from Profile (step=select in URL), go back to profile
+                if (searchParams.get("step") === "select") {
+                  navigate("/profile");
+                } else {
+                  setStep("welcome");
+                }
+              }}
               className="mb-6 inline-flex items-center gap-1 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
             >
               <ArrowLeft size={14} /> Back

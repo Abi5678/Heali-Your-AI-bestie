@@ -419,6 +419,153 @@ def confirm_and_save_meal(
     return {"success": True, "recorded": entry}
 
 
+def log_symptoms(
+    symptoms: str,
+    severity: str = "mild",
+    next_steps: str = "",
+    followup_scheduled: bool = True,
+    tool_context=None,
+) -> dict:
+    """Log patient-reported symptoms during a Voice Guardian session.
+
+    Call this when the patient describes feeling unwell (headache, fever,
+    nausea, body aches, fatigue, etc.) and you want to record it for their
+    doctor. After logging, tell the patient what you noted and give them
+    next steps.
+
+    Args:
+        symptoms: Description of what the patient is experiencing (e.g. 'headache and fever').
+        severity: How severe — 'mild', 'moderate', or 'severe'.
+        next_steps: Optional comma-separated first-aid next steps to surface in the UI.
+        followup_scheduled: Whether you've committed to checking in with the patient later.
+    """
+    today = datetime.now().strftime("%Y-%m-%d")
+    now_time = datetime.now().strftime("%H:%M")
+    user_id = _get_user_id(tool_context)
+
+    entry = {
+        "symptoms": symptoms,
+        "severity": severity,
+        "next_steps": next_steps,
+        "followup_scheduled": followup_scheduled,
+        "date": today,
+        "time": now_time,
+        "timestamp": datetime.now().isoformat(),
+        "source": "voice_guardian",
+    }
+
+    if _use_firestore(tool_context):
+        fs = FirestoreService.get_instance()
+        try:
+            import asyncio
+            asyncio.run(
+                fs.db.collection("users").document(user_id).collection("symptoms").add(entry)
+            )
+        except Exception as exc:
+            # Log but don't block — still emit UI event
+            import logging as _logging
+            _logging.getLogger(__name__).warning("Failed to save symptoms for uid=%s: %s", user_id, exc)
+    else:
+        # Mock fallback — store in memory
+        EMERGENCY_INCIDENTS.append({**entry, "type": "symptom_report"})
+
+    emit_ui_update(
+        "symptom_logged",
+        {
+            "symptoms": symptoms,
+            "severity": severity,
+            "next_steps": next_steps,
+            "followup_scheduled": followup_scheduled,
+        },
+        tool_context,
+    )
+
+    return {
+        "success": True,
+        "recorded": entry,
+        "message": (
+            f"Symptom log saved: {symptoms} ({severity}). "
+            "The patient's doctor will be able to see this."
+        ),
+    }
+
+
+def log_otc_medication(
+    name: str,
+    dose: str = "",
+    reason: str = "",
+    tool_context=None,
+) -> dict:
+    """Log an over-the-counter (OTC) or shelf medicine as a one-time intake event.
+
+    Call this when the patient mentions taking a medicine that is NOT on their
+    regular prescription schedule (e.g. Aspirin, Panadol, Ibuprofen, antacid,
+    cough syrup, vitamin). This logs it as a one-time event — it does NOT add
+    it to their medication schedule.
+
+    Use the following decision logic:
+    1. Call get_medication_schedule to check if the medicine is prescribed.
+    2. If it IS prescribed -> use log_medication_taken instead.
+    3. If it is NOT in the schedule -> call this function.
+
+    Args:
+        name: Name of the OTC medicine (e.g. 'Aspirin', 'Panadol 500mg').
+        dose: Dose taken, if mentioned (e.g. '500mg', '1 tablet'). Optional.
+        reason: Why they took it, if mentioned (e.g. 'headache', 'fever'). Optional.
+    """
+    now = datetime.now()
+    today = now.strftime("%Y-%m-%d")
+    now_time = now.strftime("%H:%M")
+    user_id = _get_user_id(tool_context)
+
+    entry = {
+        "name": name,
+        "dose": dose,
+        "reason": reason,
+        "date": today,
+        "time": now_time,
+        "timestamp": now.isoformat(),
+        "source": "otc",
+        "one_time": True,
+    }
+
+    if _use_firestore(tool_context):
+        try:
+            import asyncio
+            fs = FirestoreService.get_instance()
+            asyncio.run(
+                fs.db.collection("users").document(user_id).collection("otc_log").add(entry)
+            )
+        except Exception as exc:
+            import logging as _logging
+            _logging.getLogger(__name__).warning("Failed to save OTC log for uid=%s: %s", user_id, exc)
+    else:
+        # Mock fallback — store in memory alongside meals log
+        MEALS_LOG.append({**entry, "type": "otc_intake"})
+
+    emit_ui_update(
+        "otc_medication_logged",
+        {
+            "name": name,
+            "dose": dose,
+            "reason": reason,
+            "time": now_time,
+        },
+        tool_context,
+    )
+
+    return {
+        "success": True,
+        "recorded": entry,
+        "message": (
+            f"One-time OTC intake logged: {name}"
+            + (f" {dose}" if dose else "")
+            + (f" for {reason}" if reason else "")
+            + ". This has NOT been added to the regular medication schedule."
+        ),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Emergency Detection & Protocol
 # ---------------------------------------------------------------------------

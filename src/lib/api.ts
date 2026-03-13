@@ -81,6 +81,35 @@ export async function logMedicationTaken(medicationName: string, token: string) 
   return handleResponse(res);
 }
 
+export async function logVital(type: string, value: string, unit: string, token: string) {
+  const res = await fetch(`${REST_API_BASE_URL}/api/vitals`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ type, value, unit }),
+  });
+  return handleResponse(res);
+}
+
+export async function logSymptom(
+  symptoms: string,
+  severity: "mild" | "moderate" | "severe" = "mild",
+  nextSteps: string = "",
+  followupScheduled: boolean = true,
+  token: string,
+) {
+  const res = await fetch(`${REST_API_BASE_URL}/api/symptoms`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({
+      symptoms,
+      severity,
+      next_steps: nextSteps,
+      followup_scheduled: followupScheduled,
+    }),
+  });
+  return handleResponse(res);
+}
+
 // ---------------------------------------------------------------------------
 // Appointments
 // ---------------------------------------------------------------------------

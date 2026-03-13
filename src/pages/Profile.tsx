@@ -79,7 +79,7 @@ const Profile = () => {
 
   const handleResetOnboarding = () => {
     clearOnboarding();
-    navigate("/onboarding");
+    navigate("/onboarding?step=select");
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -76,6 +76,7 @@ export function useVoiceGuardian(options: UseVoiceGuardianOptions = {}) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptMessage[]>([]);
   const [avatarB64, setAvatarB64] = useState<string | null>(null);
+  const [companionName, setCompanionName] = useState<string>("Your Health Companion");
 
   const wsRef = useRef<WebSocket | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -280,6 +281,7 @@ export function useVoiceGuardian(options: UseVoiceGuardianOptions = {}) {
       if (msg.target) {
         if (msg.target === "avatar_update" && msg.avatar_b64) {
           setAvatarB64(msg.avatar_b64 as string);
+          if (msg.companion_name) setCompanionName(msg.companion_name as string);
           return;
         }
         onUIEvent?.(msg as unknown as UIEvent);
@@ -606,6 +608,7 @@ registerProcessor('pcm-processor', PCMProcessor);
     isSpeakingRef,
     transcript,
     avatarB64,
+    companionName,
     connect,
     disconnect,
     sendText,

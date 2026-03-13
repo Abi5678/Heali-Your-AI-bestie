@@ -6,7 +6,7 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
+    host: "0.0.0.0",
     port: 8082,
     hmr: {
       overlay: false,
@@ -14,13 +14,13 @@ export default defineConfig(({ mode }) => ({
     proxy: {
       // WebSocket — must be proxied before HTTP entries
       "/ws": {
-        target: "http://localhost:8002",
+        target: "http://127.0.0.1:8002",
         ws: true,
         changeOrigin: true,
       },
       // REST API
       "/api": {
-        target: "http://localhost:8002",
+        target: "http://127.0.0.1:8002",
         changeOrigin: true,
       },
     },
