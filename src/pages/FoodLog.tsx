@@ -113,6 +113,10 @@ const FoodLog = () => {
       }
 
       toast({ title: "Food Analyzed", description: `${result.food_items.join(", ")} \u2014 ${result.calories} kcal` });
+      // Redirect back to guardian after 3 seconds
+      setTimeout(() => {
+        window.location.href = "/voice";
+      }, 3000);
     } catch (err) {
       toast({ variant: "destructive", title: "Analysis Failed", description: String(err) });
     } finally {
@@ -140,11 +144,20 @@ const FoodLog = () => {
   return (
     <AppLayout>
       <div className="mb-12">
-        <h1 className="font-display text-5xl font-bold tracking-tight lg:text-7xl">
-          Food
-          <br />
-          <em className="text-accent">Log</em>
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="font-display text-5xl font-bold tracking-tight lg:text-7xl">
+            Food
+            <br />
+            <em className="text-accent">Log</em>
+          </h1>
+          <button
+            onClick={() => window.location.href = "/voice"}
+            className="flex items-center gap-2 rounded-full border border-accent/30 bg-accent/5 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-accent transition-colors hover:bg-accent/10"
+          >
+            <Apple size={14} />
+            Return to Guardian
+          </button>
+        </div>
         <div className="rule-accent mt-6 mb-8 max-w-32" />
         <p className="max-w-lg text-lg text-muted-foreground">
           Snap a photo of your meal for instant macro analysis
