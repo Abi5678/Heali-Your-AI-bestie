@@ -76,12 +76,15 @@ const AppSidebar = () => {
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         } ${collapsed ? "w-[72px]" : "w-64"}`}
       >
-        <div className="flex h-16 items-center border-b border-sidebar-border px-4">
-          <NavLink to="/" className="flex items-center gap-2.5 overflow-hidden">
+        <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
+          <NavLink 
+            to="/" 
+            className={`flex items-center gap-2.5 overflow-hidden transition-all duration-200 ${collapsed ? "w-8" : "w-auto"}`}
+          >
             <img 
               src="/heali-logo.png" 
               alt="Heali" 
-              className={`h-8 transition-all duration-200 ${collapsed ? "w-8 object-left" : "w-auto"}`}
+              className={`h-8 object-left ${collapsed ? "min-w-[120px]" : ""}`} 
             />
           </NavLink>
           <button
