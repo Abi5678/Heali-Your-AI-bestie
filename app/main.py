@@ -146,9 +146,6 @@ runner = Runner(
     session_service=session_service,
 )
 
-# Serve static files (REPLACE WITH Vite dist soon)
-# STATIC_DIR = Path(__file__).parent / "static"
-# app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 # ---------------------------------------------------------------------------

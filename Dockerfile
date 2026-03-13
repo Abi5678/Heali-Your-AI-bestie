@@ -11,7 +11,24 @@ FROM node:20-alpine AS frontend-builder
 
 WORKDIR /build
 
-# Dependency layer — cached unless package files change
+# Firebase config — passed as build args (embedded into JS bundle by Vite at build time)
+ARG VITE_FIREBASE_API_KEY
+ARG VITE_FIREBASE_AUTH_DOMAIN
+ARG VITE_FIREBASE_PROJECT_ID
+ARG VITE_FIREBASE_STORAGE_BUCKET
+ARG VITE_FIREBASE_MESSAGING_SENDER_ID
+ARG VITE_FIREBASE_APP_ID
+ARG VITE_BACKEND_HOST
+
+# Make ARGs visible as ENV vars so Vite picks them up via import.meta.env.*
+ENV VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY \
+    VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN \
+    VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID \
+    VITE_FIREBASE_STORAGE_BUCKET=$VITE_FIREBASE_STORAGE_BUCKET \
+    VITE_FIREBASE_MESSAGING_SENDER_ID=$VITE_FIREBASE_MESSAGING_SENDER_ID \
+    VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID \
+    VITE_BACKEND_HOST=$VITE_BACKEND_HOST
+
 COPY package.json package-lock.json* ./
 # Use npm ci for reproducible installs; fall back to npm install if lock missing
 RUN npm ci --prefer-offline 2>/dev/null || npm install

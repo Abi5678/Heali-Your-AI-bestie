@@ -25,6 +25,13 @@ steps:
       - "--tag=${_IMAGE}:$BUILD_ID"
       - "--tag=${_IMAGE}:latest"
       - "--cache-from=${_IMAGE}:latest"
+      - "--build-arg=VITE_FIREBASE_API_KEY=AIzaSyAami7n01CmBp1EvwMaCzNSXsjlt5XvAoE"
+      - "--build-arg=VITE_FIREBASE_AUTH_DOMAIN=medlive-488722.firebaseapp.com"
+      - "--build-arg=VITE_FIREBASE_PROJECT_ID=medlive-488722"
+      - "--build-arg=VITE_FIREBASE_STORAGE_BUCKET=medlive-488722.firebasestorage.app"
+      - "--build-arg=VITE_FIREBASE_MESSAGING_SENDER_ID=479757625763"
+      - "--build-arg=VITE_FIREBASE_APP_ID=1:479757625763:web:61c5299bf510e2b3c3d216"
+      - "--build-arg=VITE_BACKEND_HOST=medlive-zjp5lygwpa-uc.a.run.app"
       - "."
     timeout: "1200s"   # 20 min for Node install + Python deps
 
