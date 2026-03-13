@@ -24,7 +24,6 @@ steps:
       - build
       - "--tag=${_IMAGE}:$BUILD_ID"
       - "--tag=${_IMAGE}:latest"
-      - "--cache-from=${_IMAGE}:latest"
       - "--build-arg=VITE_FIREBASE_API_KEY=AIzaSyAami7n01CmBp1EvwMaCzNSXsjlt5XvAoE"
       - "--build-arg=VITE_FIREBASE_AUTH_DOMAIN=medlive-488722.firebaseapp.com"
       - "--build-arg=VITE_FIREBASE_PROJECT_ID=medlive-488722"
