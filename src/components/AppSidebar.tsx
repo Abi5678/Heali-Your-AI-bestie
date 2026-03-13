@@ -17,6 +17,7 @@ import {
   Heart,
   Home,
   LogOut,
+  Bell,
 } from "lucide-react";
 
 const navItems = [
@@ -28,6 +29,7 @@ const navItems = [
   { to: "/exercise", icon: Dumbbell, label: "Exercise" },
   { to: "/prescriptions", icon: FileText, label: "Reports & Rx" },
   { to: "/booking", icon: CalendarCheck, label: "Book Doctor" },
+  { to: "/reminders", icon: Bell, label: "Reminders" },
   { to: "/family", icon: Users, label: "Family" },
   { to: "/profile", icon: User, label: "Profile" },
 ];

@@ -504,19 +504,20 @@ class FirestoreService:
     # ------------------------------------------------------------------
 
     async def list_reminder_subscribers(self) -> list[dict]:
-        """List users who have FCM token and at least one reminder enabled.
+        """List users who have at least one reminder enabled.
 
-        Reads from reminder_subscribers collection (one doc per uid with
-        fcm_token, timezone, reminder_meds_enabled, reminder_lunch_enabled,
-        lunch_reminder_time). Used by the trigger job to decide who to notify.
+        Reads from reminder_subscribers collection.
         """
         ref = self._db.collection("reminder_subscribers")
         subscribers = []
         async for doc in ref.stream():
             data = doc.to_dict()
-            if not data.get("fcm_token"):
-                continue
-            if not data.get("reminder_meds_enabled") and not data.get("reminder_lunch_enabled"):
+            if not any([
+                data.get("reminder_meds_enabled"),
+                data.get("reminder_lunch_enabled"),
+                data.get("reminder_dinner_enabled"),
+                data.get("reminder_glucose_enabled")
+            ]):
                 continue
             data["user_id"] = doc.id
             subscribers.append(data)
@@ -526,45 +527,53 @@ class FirestoreService:
         self,
         user_id: str,
         *,
-        fcm_token: str | None,
+        fcm_token: str | None = None,
+        phone_number: str | None = None,
         reminder_meds_enabled: bool = True,
         reminder_lunch_enabled: bool = True,
+        reminder_dinner_enabled: bool = True,
+        reminder_glucose_enabled: bool = True,
+        voice_reminders_enabled: bool = False,
         lunch_reminder_time: str = "12:00",
+        dinner_reminder_time: str = "19:00",
+        glucose_reminder_time: str = "08:00",
         timezone: str = "UTC",
     ) -> None:
-        """Save FCM token and reminder preferences.
-
-        Merges into users/{uid}. If fcm_token is set, also write to
-        reminder_subscribers/{uid} for efficient trigger listing. If fcm_token
-        is empty, remove from reminder_subscribers and clear token on profile.
-        """
+        """Save reminder preferences and update the trigger list."""
         profile_data = {
             "reminder_meds_enabled": reminder_meds_enabled,
             "reminder_lunch_enabled": reminder_lunch_enabled,
+            "reminder_dinner_enabled": reminder_dinner_enabled,
+            "reminder_glucose_enabled": reminder_glucose_enabled,
+            "voice_reminders_enabled": voice_reminders_enabled,
             "lunch_reminder_time": lunch_reminder_time,
+            "dinner_reminder_time": dinner_reminder_time,
+            "glucose_reminder_time": glucose_reminder_time,
             "timezone": timezone,
         }
         if fcm_token:
             profile_data["fcm_token"] = fcm_token
-            await self._user_ref(user_id).set(profile_data, merge=True)
-            sub_data = {
-                "fcm_token": fcm_token,
-                "reminder_meds_enabled": reminder_meds_enabled,
-                "reminder_lunch_enabled": reminder_lunch_enabled,
-                "lunch_reminder_time": lunch_reminder_time,
-                "timezone": timezone,
-            }
-            await self._db.collection("reminder_subscribers").document(user_id).set(sub_data)
-        else:
-            profile_data["fcm_token"] = None
-            await self._user_ref(user_id).set(profile_data, merge=True)
-            await self._db.collection("reminder_subscribers").document(user_id).delete()
+        if phone_number:
+            profile_data["phone_number"] = phone_number
+
+        profile_ref = self._db.collection("users").document(user_id).collection("profile").document("main")
+        await profile_ref.set(profile_data, merge=True)
+        
+        # Sync to subscribers collection for efficient polling
+        sub_data = {**profile_data}
+        if fcm_token:
+            sub_data["fcm_token"] = fcm_token
+        if phone_number:
+            sub_data["phone_number"] = phone_number
+            
+        await self._db.collection("reminder_subscribers").document(user_id).set(sub_data, merge=True)
+        
         logger.info(
-            "Reminder prefs saved for uid=%s token=%s meds=%s lunch=%s",
+            "Reminder prefs saved for uid=%s voice=%s meds=%s glucose=%s",
             user_id,
-            bool(fcm_token),
+            voice_reminders_enabled,
             reminder_meds_enabled,
-            reminder_lunch_enabled,
+            reminder_glucose_enabled,
         )
 
     # ------------------------------------------------------------------

@@ -199,10 +199,24 @@ async def initiate_call(
     except Exception:
         pass
 
-    return {
-        "call_sid": call_sid,
-        "status": status,
-        "contact_name": contact.get("name", ""),
-        "contact_phone_masked": _mask_phone(contact_phone),
-        "message": f"Ringing your phone now. Pick up to talk to {contact.get('name', 'your family member')}.",
-    }
+@router.get("/twiml/reminder")
+async def get_reminder_twiml(name: str = "there", type: str = "medication"):
+    """Public endpoint for Twilio to fetch reminder instructions."""
+    from fastapi.responses import Response
+    
+    msg = f"Hello {name}, this is Heali. Just a friendly reminder that it is time for your {type}."
+    if type == "glucose":
+        msg = f"Hi {name}, Heali here. Please remember to take your glucose test now."
+    elif type == "meds":
+        msg = f"Hello {name}, this is Heali. It is time for your medications."
+
+    twiml = (
+        f'<?xml version="1.0" encoding="UTF-8"?>'
+        f'<Response>'
+        f'<Pause length="1"/>'
+        f'<Say voice="Polly.Amy-Neural" language="en-US">{msg}</Say>'
+        f'<Pause length="1"/>'
+        f'<Say voice="Polly.Amy-Neural" language="en-US">Take care and have a wonderful day.</Say>'
+        f'</Response>'
+    )
+    return Response(content=twiml, media_type="application/xml")
