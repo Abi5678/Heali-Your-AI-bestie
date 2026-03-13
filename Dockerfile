@@ -41,9 +41,6 @@ COPY components.json ./
 COPY tsconfig*.json ./
 COPY public/ public/
 COPY src/ src/
-# Root-level components/ is scanned by Tailwind (content: ["./components/**/*.{ts,tsx}"])
-# Without it, Tailwind generates a near-empty CSS bundle → unstyled UI
-COPY components/ components/
 
 # Build the React SPA (outputs to /build/dist)
 # No VITE_* env vars needed at build time — URLs are resolved at runtime from
