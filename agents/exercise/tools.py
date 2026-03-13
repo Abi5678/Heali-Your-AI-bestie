@@ -44,16 +44,15 @@ EXERCISE_LIST = [
 ]
 
 
-def get_next_exercise(last_completed_number: int, tool_context=None) -> dict:
-    """Returns the next exercise to do. Call this after log_exercise_progress to know what comes next.
-
-    Args:
-        last_completed_number: The exercise number you just logged (1-14). Use 0 for the first exercise.
+def get_next_exercise(tool_context=None) -> dict:
+    """Returns the next exercise to do. 
+    
+    It automatically determines the next exercise based on your logged progress in Firestore.
     """
-    _dbg("get_next_exercise", "entry", {"last_completed_number": last_completed_number}, "H1")
+    _dbg("get_next_exercise", "entry", {}, "H1")
     uid = _get_user_id(tool_context)
     
-    # Persistent State: rely on Firestore if available
+    # Persistent State: rely on Firestore
     fs = FirestoreService.get_instance()
     highest_logged = 0
     if fs.is_available:
@@ -63,15 +62,20 @@ def get_next_exercise(last_completed_number: int, tool_context=None) -> dict:
         except Exception as e:
             _dbg("get_next_exercise", "firestore_error", {"error": str(e)})
 
-    # Guardrail: never go backwards. 
-    effective_last = max(last_completed_number, highest_logged)
-    if effective_last >= TOTAL_EXERCISES:
+    # Progression: highest_logged is the count of completed exercises.
+    # The next exercise is at index [highest_logged].
+    if highest_logged >= TOTAL_EXERCISES:
         return {"next": None, "message": "Session complete. Call complete_exercise_session."}
     
-    idx = effective_last  # 0-based index into EXERCISE_LIST
+    idx = highest_logged
     name, duration = EXERCISE_LIST[idx]
-    out = {"exercise_name": name, "exercise_number": idx + 1, "duration_seconds": duration, "message": f"Next: {name} ({duration}s). Introduce this one — do not skip."}
-    _dbg("get_next_exercise", "exit", {"effective_last": effective_last, "highest_logged": highest_logged, **out}, "H1")
+    out = {
+        "exercise_name": name, 
+        "exercise_number": idx + 1, 
+        "duration_seconds": duration, 
+        "message": f"Next: {name} ({duration}s). Introduce this — do not skip."
+    }
+    _dbg("get_next_exercise", "exit", {"highest_logged": highest_logged, **out}, "H1")
     return out
 
 
