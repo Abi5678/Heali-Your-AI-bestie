@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ArrowRight, ArrowLeft, Loader2, Upload, User } from "lucide-react";
+import { Sparkles, ArrowRight, ArrowLeft, Loader2, Upload, User, Users } from "lucide-react";
 import { useRef } from "react";
 import { HEALI_VOICES, Persona, saveOnboardingState } from "@/lib/personas";
+import { LANGUAGE_PERSONAS } from "@/lib/voiceConfig";
 import { saveProfile, generateAvatar } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -32,11 +33,13 @@ const Onboarding = () => {
       : "welcome";
   });
   const [selected, setSelected] = useState<Persona | null>(() => HEALI_VOICES[0]);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("English");
   const [customName, setCustomName] = useState("");
   const [customDescription, setCustomDescription] = useState("");
   const [customAvatar, setCustomAvatar] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Patient Details State
   const { getIdToken } = useAuth();
@@ -53,9 +56,47 @@ const Onboarding = () => {
   const [primaryDoctor, setPrimaryDoctor] = useState("");
   const [fillingWithAgent, setFillingWithAgent] = useState(false);
 
-  const handleSelectPreset = (persona: Persona) => {
+  const handleSelectPreset = async (persona: Persona) => {
+    const token = await getIdToken();
+    if (token) {
+      try {
+        await saveProfile(
+          {
+            voice_name: persona.voiceName,
+            language: selectedLanguage,
+            companion_name: persona.name,
+          },
+          token,
+        );
+      } catch (e) {
+        console.error("Failed to save voice/language", e);
+      }
+    }
     setSelected(persona);
     setStep("details");
+  };
+
+  const getPreviewUrl = (voiceId: string) => {
+    const slug = voiceId.replace("heali-", "heali_");
+    return `/assets/audio/companions/${slug}.wav`;
+  };
+
+  const handleVoiceCardEnter = (voice: Persona) => {
+    const audio = previewAudioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.src = getPreviewUrl(voice.id);
+      audio.play().catch(() => {});
+    }
+  };
+
+  const handleVoiceCardLeave = () => {
+    const audio = previewAudioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
   };
 
   const handleGenerateAvatar = async () => {
@@ -289,6 +330,17 @@ const Onboarding = () => {
             >
               Get Started <ArrowRight size={16} />
             </button>
+            <p className="mt-6 text-sm text-muted-foreground">
+              I'm a family member or caregiver —{" "}
+              <button
+                type="button"
+                onClick={() => navigate("/family")}
+                className="inline-flex items-center gap-1.5 font-semibold text-primary hover:underline"
+              >
+                <Users size={14} strokeWidth={1.5} />
+                Go to Family Dashboard
+              </button>
+            </p>
           </motion.div>
         )}
 
@@ -315,19 +367,42 @@ const Onboarding = () => {
               <ArrowLeft size={14} /> Back
             </button>
             <h2 className="font-display text-3xl font-bold tracking-tight">
-              Find your perfect <em className="text-primary">Heali</em>
+              Find your healthy soundboard
             </h2>
-            <p className="mt-2 mb-8 text-muted-foreground">
-              Pick a voice to get started.
+            <p className="mt-2 mb-6 text-muted-foreground">
+              Pick a voice style for Heali that feels right for you.
             </p>
 
+            <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              Language
+            </p>
+            <div className="mb-8 flex flex-wrap gap-2">
+              {Object.values(LANGUAGE_PERSONAS).map(({ label }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setSelectedLanguage(label)}
+                  className={`rounded-full px-4 py-1.5 font-mono text-xs uppercase tracking-widest transition-colors ${
+                    selectedLanguage === label
+                      ? "bg-primary text-primary-foreground"
+                      : "border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <audio ref={previewAudioRef} className="sr-only" aria-hidden />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {HEALI_VOICES.map((voice) => (
                 <button
                   key={voice.id}
                   type="button"
                   onClick={() => handleSelectPreset(voice)}
-                  className={`group flex items-start gap-4 rounded-lg border-2 bg-card p-5 text-left transition-all duration-150 hover:border-primary hover:shadow-md ${
+                  onMouseEnter={() => handleVoiceCardEnter(voice)}
+                  onMouseLeave={handleVoiceCardLeave}
+                  className={`group flex items-start gap-4 rounded-lg border-2 bg-card p-5 text-left transition-all duration-150 hover:border-emerald-500/60 hover:shadow-md ${
                     selected?.id === voice.id ? "border-primary shadow-md" : "border-border"
                   }`}
                 >
@@ -335,14 +410,15 @@ const Onboarding = () => {
                     <img
                       src={voice.avatar}
                       alt={voice.name}
-                      className="h-16 w-16 rounded-full border-2 border-border object-cover transition-all group-hover:border-primary"
+                      className="h-16 w-16 rounded-full border-2 border-border object-cover transition-all group-hover:border-emerald-500/60"
                     />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <h3 className="font-display text-lg font-bold">{voice.name}</h3>
                     <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                      {voice.title}
+                      {voice.role ?? "VOICE COMPANION"}
                     </p>
+                    <p className="mt-1 text-sm text-muted-foreground">{voice.description}</p>
                   </div>
                 </button>
               ))}

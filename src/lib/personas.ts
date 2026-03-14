@@ -16,6 +16,8 @@ export interface Persona {
   avatar: string;
   greeting: string;
   description: string;
+  /** Optional role label (e.g. "VOICE COMPANION") for onboarding voice cards. */
+  role?: string;
   /** Gemini voice name for backend (e.g. Aoede, Kore). Used when saving profile from onboarding. */
   voiceName?: string;
 }
@@ -26,44 +28,48 @@ export const HEALI_VOICES: Persona[] = [
     id: "heali-balanced",
     name: "Heali (Balanced)",
     title: "Voice · Balanced",
+    role: "VOICE COMPANION",
     language: "English",
     languageCode: "en",
     avatar: healiBalanced,
     greeting: "Hello, I'm Heali. I'm here to support you.",
-    description: "A versatile, caring voice that feels familiar and supportive",
+    description: "A warm, familiar voice that provides steady support.",
     voiceName: "Aoede",
   },
   {
     id: "heali-calm",
     name: "Heali (Calm)",
     title: "Voice · Calm",
+    role: "VOICE COMPANION",
     language: "English",
     languageCode: "en",
     avatar: healiCalm,
     greeting: "It's okay. Take a deep breath. I'm with you.",
-    description: "A deeply calming and reassuring voice, perfect for anxiety-free guidance",
+    description: "A soothing, gentle voice designed to reduce health anxiety.",
     voiceName: "Kore",
   },
   {
     id: "heali-energetic",
     name: "Heali (Energetic)",
     title: "Voice · Energetic",
+    role: "VOICE COMPANION",
     language: "English",
     languageCode: "en",
     avatar: healiEnergetic,
     greeting: "You've got this! Let's hit that goal today!",
-    description: "An energetic and motivational voice to keep you moving and inspired",
+    description: "An upbeat, motivational voice to keep you moving.",
     voiceName: "Puck",
   },
   {
     id: "heali-informative",
     name: "Heali (Informative)",
     title: "Voice · Informative",
+    role: "VOICE COMPANION",
     language: "English",
     languageCode: "en",
     avatar: healiInformative,
     greeting: "Today's data shows good progress. Let's review the plan.",
-    description: "A clear, informative voice that provides direct and trustworthy health data",
+    description: "A clear, authoritative voice for direct health insights.",
     voiceName: "Charon",
   },
 ];

@@ -1093,8 +1093,9 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                 booking_events = BOOKING_UI_QUEUE.pop(uid, [])
                 ui_events.extend(booking_events)
 
-                # Dedupe: same medication_logged/medication_taken in one batch → send only last
+                # Dedupe: same medication_logged/medication_taken in one batch → send only last; profile_preview → at most one
                 _seen_med_key: set[tuple[str, str]] = set()
+                _seen_profile_preview = False
                 _deduped: list[dict] = []
                 for ev in reversed(ui_events):
                     t = ev.get("target")
@@ -1104,6 +1105,10 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                         if key in _seen_med_key:
                             continue
                         _seen_med_key.add(key)
+                    if t == "profile_preview":
+                        if _seen_profile_preview:
+                            continue
+                        _seen_profile_preview = True
                     _deduped.append(ev)
                 ui_events = list(reversed(_deduped))
 

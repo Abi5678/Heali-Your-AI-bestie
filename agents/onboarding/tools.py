@@ -71,6 +71,12 @@ async def complete_onboarding_and_save(name: str, language: str, allergies: list
     provided or declined each item.
     """
     try:
+        # Idempotent: if we already completed onboarding, do not save/emit/inject again
+        if tool_context and tool_context.state.get("onboarding_complete"):
+            return {
+                "status": "success",
+                "message": "Profile already saved. Handoff already done. Do not call this tool again. Do not ask about the caregiver again. Say the handoff phrase once if you have not already, then stop.",
+            }
         # Guard: require emergency contact unless user explicitly skipped
         name_ok = bool(emergency_contact_name and str(emergency_contact_name).strip())
         phone_ok = bool(emergency_contact_phone and str(emergency_contact_phone).strip())
@@ -113,6 +119,8 @@ async def complete_onboarding_and_save(name: str, language: str, allergies: list
         # Set state flag to trigger handoff to Guardian Agent
         if tool_context:
             tool_context.state["onboarding_complete"] = True
+            # Signal frontend to set localStorage onboarding completed so sidebar links work
+            await emit_ui_update("onboarding_complete", {}, tool_context)
             
             # Inject proactive prompt so the Guardian (root) agent speaks immediately after handoff
             live_queue = tool_context.state.get("live_request_queue")

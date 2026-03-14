@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,11 +7,17 @@ import { useAuth } from "@/contexts/AuthContext";
 const Login = () => {
   const { signIn, signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [redirectToFamily, setRedirectToFamily] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("redirect") === "family") setRedirectToFamily(true);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +29,12 @@ const Login = () => {
       } else {
         await signIn(email, password);
       }
-      navigate("/");
+      const code = searchParams.get("code");
+      if (redirectToFamily) {
+        navigate(code ? `/family?code=${encodeURIComponent(code)}` : "/family");
+      } else {
+        navigate("/");
+      }
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string };
       const code = error?.code || "";
@@ -46,7 +57,12 @@ const Login = () => {
     setLoading(true);
     try {
       await signInWithGoogle();
-      navigate("/");
+      const code = searchParams.get("code");
+      if (redirectToFamily) {
+        navigate(code ? `/family?code=${encodeURIComponent(code)}` : "/family");
+      } else {
+        navigate("/");
+      }
     } catch (err: unknown) {
       const error = err as { message?: string };
       setError(error?.message || "Google sign-in failed.");
@@ -155,6 +171,21 @@ const Login = () => {
             {isSignUp ? "Sign in" : "Sign up"}
           </button>
         </p>
+        <div className="mt-4 text-center">
+          <p className="text-xs text-muted-foreground">Family member?</p>
+          <button
+            type="button"
+            onClick={() => setRedirectToFamily(true)}
+            className="mt-1 text-sm font-semibold text-primary hover:underline"
+          >
+            Sign in and go to Family Dashboard
+          </button>
+          {redirectToFamily && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              You&apos;ll be taken to Family Dashboard after signing in.
+            </p>
+          )}
+        </div>
       </motion.div>
     </div>
   );

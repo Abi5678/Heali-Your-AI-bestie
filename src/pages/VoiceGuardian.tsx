@@ -5,6 +5,7 @@ import {
   Mic, MicOff, Phone, Globe, Volume2, Wifi, WifiOff,
   Trash2, Send, Camera, CameraOff, CheckCircle2, AlertTriangle,
   Pill, Heart, Utensils, CalendarCheck, ShieldAlert,
+  Languages,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useVoiceGuardian } from "@/hooks/useVoiceGuardian";
@@ -13,6 +14,26 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { pushUIEvent } from "@/hooks/useUIEventStore";
 import type { UIEvent } from "@/hooks/useVoiceGuardian";
+import { getOnboardingState, saveOnboardingState } from "@/lib/personas";
+
+// Live Interpreter prompts (match app/static/js/app.js for backend behavior)
+function buildLiveInterpreterActivationPrompt(patientLang: string, doctorLang: string): string {
+  return `[SYSTEM: The patient has activated LIVE INTERPRETER MODE. Route to the interpreter agent for real-time translation.
+
+You are an expert, real-time medical interpreter. You are bridging a live conversation between a patient who speaks ${patientLang} and a doctor who speaks ${doctorLang}.
+
+CRITICAL RULES:
+1. Do not answer questions, give advice, or participate in the conversation.
+2. ONLY translate what is spoken.
+3. If you hear ${patientLang}, immediately translate it into ${doctorLang}.
+4. If you hear ${doctorLang}, immediately translate it into ${patientLang}.
+5. Maintain the exact tone, urgency, and medical terminology used by the speaker.
+6. Speak entirely in the first person (e.g., if the patient says "My stomach hurts", you say "My stomach hurts", NOT "The patient says their stomach hurts").
+7. Continue translating every utterance until explicitly told to stop.]`;
+}
+function buildLiveInterpreterDeactivationPrompt(companionName: string, language: string): string {
+  return `[SYSTEM: DEACTIVATE LIVE INTERPRETER MODE. The translation session has ended. You MUST transfer back to the root heali agent now by calling transfer_to_heali. Once you are the root agent again, resume your normal role as ${companionName}, the patient's health companion. Briefly acknowledge in ${language} that translation mode is off, then ask how else you can help.]`;
+}
 
 const statusLabels: Record<string, string> = {
   disconnected: "Tap to connect",
@@ -257,6 +278,8 @@ const VoiceGuardian = () => {
   const location = useLocation();
   const { user, getIdToken } = useAuth();
   const [selectedPersona, setSelectedPersona] = useState("en");
+  const [isLiveInterpreterActive, setIsLiveInterpreterActive] = useState(false);
+  const hasAutoActivatedInterpreterRef = useRef(false);
 
   // Fetch true profile language so the pill matches actual db preference
   useEffect(() => {
@@ -333,18 +356,30 @@ const VoiceGuardian = () => {
 
   const hasAutoConnected = useRef(false);
 
-  // Get Firebase token on mount and auto-connect if requested
+  // Get Firebase token on mount and auto-connect if requested (proactivePrompt or activateLiveInterpreter)
   useEffect(() => {
     getIdToken().then((token) => {
       if (token) setFirebaseToken(token);
 
-      if (!hasAutoConnected.current && location.state?.proactivePrompt) {
+      const wantsProactive = location.state?.proactivePrompt;
+      const wantsInterpreter = location.state?.activateLiveInterpreter;
+      if (!hasAutoConnected.current && (wantsProactive || wantsInterpreter)) {
         hasAutoConnected.current = true;
-        // Small timeout to ensure state updates (like token) apply before connecting
         setTimeout(() => connect(), 100);
       }
     });
-  }, [getIdToken, location.state?.proactivePrompt, connect]);
+  }, [getIdToken, location.state?.proactivePrompt, location.state?.activateLiveInterpreter, connect]);
+
+  // Auto-activate Live Interpreter when we land on /voice with state.activateLiveInterpreter and become ready
+  useEffect(() => {
+    if (status !== "ready" || !location.state?.activateLiveInterpreter || hasAutoActivatedInterpreterRef.current) return;
+    hasAutoActivatedInterpreterRef.current = true;
+    const patientLang = LANGUAGE_PERSONAS[selectedPersona]?.label ?? "English";
+    const doctorLang = patientLang === "English" ? "the other speaker's language (auto-detect it)" : "English";
+    const prompt = buildLiveInterpreterActivationPrompt(patientLang, doctorLang);
+    sendText(prompt, { silent: true });
+    setIsLiveInterpreterActive(true);
+  }, [status, location.state?.activateLiveInterpreter, selectedPersona, sendText]);
 
   // Auto-scroll transcript
   useEffect(() => {
@@ -364,6 +399,19 @@ const VoiceGuardian = () => {
     if (textInput.trim() && (status === "connected" || status === "ready")) {
       sendText(textInput.trim());
       setTextInput("");
+    }
+  };
+
+  const handleTranslatorToggle = () => {
+    if (status !== "ready") return;
+    const patientLang = LANGUAGE_PERSONAS[selectedPersona]?.label ?? "English";
+    if (!isLiveInterpreterActive) {
+      const doctorLang = patientLang === "English" ? "the other speaker's language (auto-detect it)" : "English";
+      sendText(buildLiveInterpreterActivationPrompt(patientLang, doctorLang), { silent: true });
+      setIsLiveInterpreterActive(true);
+    } else {
+      sendText(buildLiveInterpreterDeactivationPrompt(companionName, patientLang), { silent: true });
+      setIsLiveInterpreterActive(false);
     }
   };
 
@@ -422,6 +470,10 @@ const VoiceGuardian = () => {
         return;
       }
     }
+    if (event.target === "onboarding_complete") {
+      saveOnboardingState({ ...getOnboardingState(), completed: true });
+      return;
+    }
     pushUIEvent(event);
     setUIEvents((prev) => {
       const target = event.target;
@@ -434,6 +486,10 @@ const VoiceGuardian = () => {
           const lastKey = String(lastData?.medication_name ?? lastData?.name ?? lastData?.medication ?? "");
           if (lastKey === medKey) return prev;
         }
+      }
+      if (target === "profile_preview") {
+        const last = prev[prev.length - 1];
+        if (last?.target === "profile_preview") return prev;
       }
       return [...prev, event];
     });
@@ -514,6 +570,16 @@ const VoiceGuardian = () => {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Main voice area */}
         <div className="rounded-lg border border-border bg-card p-8 text-center lg:col-span-2">
+          {/* Live Interpreter banner */}
+          {isLiveInterpreterActive && (
+            <div className="mb-4 flex items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 py-2 px-4">
+              <Languages size={16} strokeWidth={1.5} className="text-primary" />
+              <span className="font-mono text-xs uppercase tracking-widest text-primary">
+                Interpreter active: {LANGUAGE_PERSONAS[selectedPersona]?.label ?? "English"} ↔ {LANGUAGE_PERSONAS[selectedPersona]?.label === "English" ? "Other (auto)" : "English"}
+              </span>
+            </div>
+          )}
+
           {/* Connection status */}
           <div className="mb-6 flex items-center justify-center gap-2">
             {status === "ready" ? (
@@ -649,6 +715,17 @@ const VoiceGuardian = () => {
               title={cameraActive ? "Stop camera" : "Start camera for pill/food detection"}
             >
               {cameraActive ? <CameraOff size={20} strokeWidth={1.5} /> : <Camera size={20} strokeWidth={1.5} />}
+            </button>
+            <button
+              onClick={handleTranslatorToggle}
+              disabled={!isActive}
+              className={`flex h-12 w-12 items-center justify-center rounded-full border transition-colors duration-150 disabled:opacity-30 ${isLiveInterpreterActive
+                ? "border-primary bg-primary/20 text-primary"
+                : "border-border bg-card text-foreground hover:bg-secondary"
+                }`}
+              title={isLiveInterpreterActive ? "Turn off live translation" : "Turn on live translation (interpreter mode)"}
+            >
+              <Languages size={20} strokeWidth={1.5} />
             </button>
             <button className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors duration-150 hover:bg-secondary">
               <Volume2 size={20} strokeWidth={1.5} />

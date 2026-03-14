@@ -13,6 +13,7 @@ import {
   User,
   ArrowRight,
   Heart,
+  Languages,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +22,7 @@ import { getProfile } from "@/lib/api";
 const FEATURES = [
   { to: "/voice", icon: Mic, label: "Voice Guardian", description: "Talk to your AI health companion", primary: true },
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", description: "Health overview & today's summary" },
+  { to: "/translator", icon: Languages, label: "Translator", description: "Real-time voice translation with your doctor or family" },
   { to: "/pills", icon: Pill, label: "Pill Check", description: "Verify medications with your camera" },
   { to: "/food", icon: Camera, label: "Food Log", description: "Log meals and track nutrition" },
   { to: "/exercise", icon: Dumbbell, label: "Exercise", description: "Guided workouts & breathing" },
@@ -108,13 +110,13 @@ const Welcome = () => {
       {/* Feature blocks */}
       <div className="mb-8">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.filter((f) => !f.primary).map(({ to, icon: Icon, label, description }, i) => (
+          {FEATURES.filter((f) => !f.primary).map(({ to, icon: Icon, label, description, state: featureState }, i) => (
             <motion.button
               key={to}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.05 * i }}
-              onClick={() => navigate(to)}
+              onClick={() => navigate(to, featureState ? { state: featureState } : undefined)}
               className="group flex items-start gap-4 rounded-lg border border-border bg-card p-5 text-left transition-all duration-150 hover:border-primary/50 hover:bg-primary/5 hover:shadow-md"
             >
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-secondary text-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">

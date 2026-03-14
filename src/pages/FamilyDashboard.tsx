@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Activity, Pill, AlertTriangle, TrendingUp,
   Phone, CheckCircle2, XCircle, Link2, Loader2, Copy,
@@ -38,12 +39,42 @@ const adherenceData = [
 
 const FamilyDashboard = () => {
   const { getIdToken } = useAuth();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [familyMembers] = useState<FamilyMember[]>(FALLBACK_MEMBERS);
   const [alerts] = useState(FALLBACK_ALERTS);
   const [linkCode, setLinkCode] = useState<string | null>(null);
   const [verifyCode, setVerifyCode] = useState("");
   const [linking, setLinking] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const didAutoVerifyFromUrlRef = useRef(false);
+
+  const codeFromUrl = searchParams.get("code")?.trim().toUpperCase().slice(0, 5);
+
+  useEffect(() => {
+    if (codeFromUrl && !didAutoVerifyFromUrlRef.current) setVerifyCode(codeFromUrl);
+  }, [codeFromUrl]);
+
+  useEffect(() => {
+    if (!codeFromUrl || verifyCode !== codeFromUrl || didAutoVerifyFromUrlRef.current || linking) return;
+    let cancelled = false;
+    didAutoVerifyFromUrlRef.current = true;
+    getIdToken()
+      .then((token) => {
+        if (!token || cancelled) return null;
+        return verifyFamilyCode(verifyCode, token);
+      })
+      .then((result) => {
+        if (cancelled || !result) return;
+        toast({ title: "Linked!", description: `Connected to ${result.parent_name || "family member"}` });
+        setVerifyCode("");
+        navigate("/family", { replace: true });
+      })
+      .catch(() => {
+        didAutoVerifyFromUrlRef.current = false;
+      });
+    return () => { cancelled = true; };
+  }, [codeFromUrl, verifyCode, linking, getIdToken, navigate]);
 
   const handleGenerateCode = async () => {
     setGenerating(true);
@@ -83,6 +114,14 @@ const FamilyDashboard = () => {
     }
   };
 
+  const copyDashboardLink = () => {
+    if (linkCode && typeof window !== "undefined") {
+      const url = `${window.location.origin}/login?redirect=family&code=${linkCode}`;
+      navigator.clipboard.writeText(url);
+      toast({ title: "Dashboard link copied", description: "Share it with your family member." });
+    }
+  };
+
   return (
     <AppLayout>
       <div className="mb-12">
@@ -117,12 +156,25 @@ const FamilyDashboard = () => {
                 {generating ? <Loader2 size={14} className="animate-spin" /> : "Generate Code"}
               </button>
               {linkCode && (
-                <div className="flex items-center gap-2 rounded-md border border-primary bg-card px-4 py-2">
-                  <span className="font-mono text-lg font-bold tracking-[0.3em] text-primary">{linkCode}</span>
-                  <button onClick={copyCode} className="text-muted-foreground hover:text-primary">
+                <>
+                  <div className="flex items-center gap-2 rounded-md border border-primary bg-card px-4 py-2">
+                    <span className="font-mono text-lg font-bold tracking-[0.3em] text-primary">{linkCode}</span>
+                    <button onClick={copyCode} className="text-muted-foreground hover:text-primary">
+                      <Copy size={14} />
+                    </button>
+                  </div>
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Share dashboard link (family signs in and lands here):
+                  </p>
+                  <button
+                    type="button"
+                    onClick={copyDashboardLink}
+                    className="mt-1 flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 font-mono text-xs uppercase tracking-widest text-foreground transition-colors hover:bg-secondary"
+                  >
                     <Copy size={14} />
+                    Copy dashboard link
                   </button>
-                </div>
+                </>
               )}
             </div>
           </div>

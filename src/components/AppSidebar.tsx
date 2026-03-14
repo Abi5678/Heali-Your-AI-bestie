@@ -18,12 +18,14 @@ import {
   Home,
   LogOut,
   Bell,
+  Languages,
 } from "lucide-react";
 
 const navItems = [
   { to: "/", icon: Home, label: "Home" },
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/voice", icon: Mic, label: "Voice Guardian" },
+  { to: "/translator", icon: Languages, label: "Translator" },
   { to: "/pills", icon: Pill, label: "Pill Check" },
   { to: "/food", icon: Camera, label: "Food Log" },
   { to: "/exercise", icon: Dumbbell, label: "Exercise" },
@@ -86,7 +88,7 @@ const AppSidebar = () => {
             <img 
               src="/heali-logo.png" 
               alt="Heali" 
-              className={`h-8 object-left ${collapsed ? "min-w-[120px]" : ""}`} 
+              className={`h-10 object-left object-contain ${collapsed ? "" : "min-w-[140px]"}`} 
             />
           </NavLink>
           <button
