@@ -1104,6 +1104,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                 _seen_med_key: set[tuple[str, str]] = set()
                 _seen_meal_key: set[tuple[str, str, str]] = set()
                 _seen_profile_preview = False
+                _seen_food_detected = False
                 _deduped: list[dict] = []
                 for ev in reversed(ui_events):
                     t = ev.get("target")
@@ -1119,6 +1120,10 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                         if meal_key in _seen_meal_key:
                             continue
                         _seen_meal_key.add(meal_key)
+                    if t == "food_detected":
+                        if _seen_food_detected:
+                            continue
+                        _seen_food_detected = True
                     if t == "profile_preview":
                         if _seen_profile_preview:
                             continue
