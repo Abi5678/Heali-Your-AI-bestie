@@ -650,38 +650,36 @@ const VoiceGuardian = () => {
             </span>
           </div>
 
-          {/* Camera feed */}
-          {cameraActive && (
-            <div className="relative mx-auto mb-6 max-w-md overflow-hidden rounded-lg border border-border">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="h-auto w-full"
-              />
-              <div className="absolute bottom-2 right-2 rounded bg-black/60 px-2 py-1 font-mono text-[10px] text-white">
-                LIVE
-              </div>
-              {/* Snap button — capture food photo */}
-              <button
-                onClick={handleFoodSnap}
-                disabled={scanningFood}
-                className="absolute bottom-3 left-1/2 -translate-x-1/2 flex h-14 w-14 items-center justify-center rounded-full border-4 border-white bg-white/20 backdrop-blur-sm transition-all hover:bg-white/40 disabled:opacity-50"
-                title="Capture food photo for macro analysis"
-              >
-                {scanningFood ? (
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                    className="h-6 w-6 rounded-full border-2 border-white border-t-transparent"
-                  />
-                ) : (
-                  <Utensils size={20} className="text-white" />
-                )}
-              </button>
+          {/* Camera feed — always in DOM so videoRef is available when startCamera() sets srcObject */}
+          <div className={`relative mx-auto mb-6 max-w-md overflow-hidden rounded-lg border border-border${cameraActive ? "" : " hidden"}`}>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="h-auto w-full"
+            />
+            <div className="absolute bottom-2 right-2 rounded bg-black/60 px-2 py-1 font-mono text-[10px] text-white">
+              LIVE
             </div>
-          )}
+            {/* Snap button — capture food photo */}
+            <button
+              onClick={handleFoodSnap}
+              disabled={scanningFood}
+              className="absolute bottom-3 left-1/2 -translate-x-1/2 flex h-14 w-14 items-center justify-center rounded-full border-4 border-white bg-white/20 backdrop-blur-sm transition-all hover:bg-white/40 disabled:opacity-50"
+              title="Capture food photo for macro analysis"
+            >
+              {scanningFood ? (
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                  className="h-6 w-6 rounded-full border-2 border-white border-t-transparent"
+                />
+              ) : (
+                <Utensils size={20} className="text-white" />
+              )}
+            </button>
+          </div>
 
           {/* Mic Button / Avatar */}
           <div className="relative mx-auto mb-8 inline-block">
