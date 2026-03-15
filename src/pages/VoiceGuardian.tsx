@@ -367,7 +367,7 @@ const VoiceGuardian = () => {
       const wantsInterpreter = location.state?.activateLiveInterpreter;
       if (!hasAutoConnected.current && (wantsProactive || wantsInterpreter)) {
         hasAutoConnected.current = true;
-        setTimeout(() => connect(), 100);
+        setTimeout(() => connect(token || undefined), 100);
       }
     });
   }, [getIdToken, location.state?.proactivePrompt, location.state?.activateLiveInterpreter, connect]);

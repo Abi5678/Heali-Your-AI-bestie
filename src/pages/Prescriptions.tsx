@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Camera,
@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { scanDocument } from "@/lib/api";
+import { scanDocument, getScanHistory } from "@/lib/api";
 
 type ScanType = "prescription" | "report";
 type Phase = "idle" | "camera" | "scanning" | "result";
@@ -54,7 +54,7 @@ const Prescriptions = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { getIdToken } = useAuth();
+  const { user, getIdToken } = useAuth();
 
   // ── helpers ──────────────────────────────────────────────────────────────
 
@@ -62,6 +62,23 @@ const Prescriptions = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
   }, []);
+
+  // Load persisted scan history on mount
+  useEffect(() => {
+    if (!user?.uid) return;
+    getIdToken().then((token) => {
+      if (!token) return;
+      getScanHistory(user.uid, token)
+        .then(({ prescriptions, reports }) => {
+          const all = [
+            ...prescriptions.map((p) => ({ ...p, scan_type: "prescription" } as ScanResult)),
+            ...reports.map((r) => ({ ...r, scan_type: "report" } as ScanResult)),
+          ].sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
+          setHistory(all);
+        })
+        .catch(() => {});
+    });
+  }, [user?.uid, getIdToken]);
 
   const runScan = useCallback(
     async (base64: string) => {

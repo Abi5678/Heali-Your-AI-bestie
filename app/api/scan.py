@@ -254,8 +254,25 @@ class ScanRequest(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Endpoint
+# Endpoints
 # ---------------------------------------------------------------------------
+
+
+@router.get("/history")
+async def get_scan_history(uid: str, authorization: str = Header(default=None)):
+    """Returns all saved prescriptions and lab reports for a user."""
+    _verify_token(authorization)
+    try:
+        from agents.shared.firestore_service import FirestoreService
+        fs = FirestoreService.get_instance()
+        if not fs.is_available:
+            return {"prescriptions": [], "reports": []}
+        prescriptions = await fs.get_prescriptions(uid)
+        reports = await fs.get_reports(uid)
+        return {"prescriptions": prescriptions, "reports": reports}
+    except Exception as exc:
+        logger.error("Error fetching scan history: %s", exc)
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @router.post("")
