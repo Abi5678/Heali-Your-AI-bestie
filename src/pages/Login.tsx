@@ -5,7 +5,7 @@ import { Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
-  const { signIn, signUp, signInWithGoogle, user, loading } = useAuth();
+  const { signIn, signUp, signInWithGoogle, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isSignUp, setIsSignUp] = useState(false);
@@ -22,7 +22,7 @@ const Login = () => {
   // Handle mobile Google redirect return: after signInWithRedirect completes,
   // the user lands back on /login already authenticated — navigate them away.
   useEffect(() => {
-    if (!loading && user) {
+    if (!authLoading && user) {
       const code = searchParams.get("code");
       if (redirectToFamily) {
         navigate(code ? `/family?code=${encodeURIComponent(code)}` : "/family");
@@ -30,7 +30,7 @@ const Login = () => {
         navigate("/");
       }
     }
-  }, [user, loading, redirectToFamily, navigate, searchParams]);
+  }, [user, authLoading, redirectToFamily, navigate, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
