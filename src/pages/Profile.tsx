@@ -222,33 +222,6 @@ const Profile = () => {
             </button>
           </div>
 
-          {(profile?.companion_name || onboarding.persona) && (
-            <div className="mt-6 flex items-center gap-4 rounded-md border border-border p-4">
-              {profile?.avatar_b64 ? (
-                <img
-                  src={profile.avatar_b64.startsWith("data:") ? profile.avatar_b64 : `data:image/png;base64,${profile.avatar_b64}`}
-                  alt={profile.companion_name || "Companion"}
-                  className="h-12 w-12 rounded-full border-2 border-primary/20 object-cover"
-                />
-              ) : onboarding.persona ? (
-                <img
-                  src={onboarding.persona.avatar}
-                  alt={onboarding.persona.name}
-                  className="h-12 w-12 rounded-full border-2 border-primary/20 object-cover"
-                />
-              ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-primary/20 bg-primary/10">
-                  <User size={20} className="text-primary/50" />
-                </div>
-              )}
-              <div>
-                <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Current Companion</p>
-                <p className="mt-0.5 text-sm font-semibold">
-                  {profile?.companion_name || onboarding.persona?.name} · {profile?.language || onboarding.persona?.language || "English"}
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

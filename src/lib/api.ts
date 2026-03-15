@@ -135,6 +135,17 @@ export async function scanDocument(imageB64: string, scanType: "prescription" | 
   return handleResponse(res);
 }
 
+export async function getScanHistory(uid: string, token: string) {
+  const res = await fetch(
+    `${REST_API_BASE_URL}/api/scan/history?uid=${encodeURIComponent(uid)}`,
+    { headers: authHeaders(token) },
+  );
+  return handleResponse<{
+    prescriptions: Array<Record<string, unknown>>;
+    reports: Array<Record<string, unknown>>;
+  }>(res);
+}
+
 // ---------------------------------------------------------------------------
 // Food
 // ---------------------------------------------------------------------------
