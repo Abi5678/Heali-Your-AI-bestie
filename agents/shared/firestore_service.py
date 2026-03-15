@@ -606,14 +606,18 @@ class FirestoreService:
 
     async def add_food_log(self, uid: str, data: dict):
         """Save a food log entry to users/{uid}/food_logs."""
-        data["timestamp"] = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(timezone.utc)
+        data["timestamp"] = now.isoformat()
+        data.setdefault("date", now.strftime("%Y-%m-%d"))
         await self._user_ref(uid).collection("food_logs").add(data)
 
-    async def get_food_logs(self, uid: str, limit: int = 10) -> list[dict]:
-        """Get recent food logs for a user."""
+    async def get_food_logs(self, uid: str, limit: int = 10, date: str | None = None) -> list[dict]:
+        """Get recent food logs for a user, optionally filtered by date (YYYY-MM-DD)."""
+        ref = self._user_ref(uid).collection("food_logs")
+        if date:
+            ref = ref.where("date", "==", date)
         docs = (
-            self._user_ref(uid)
-            .collection("food_logs")
+            ref
             .order_by("timestamp", direction="DESCENDING")
             .limit(limit)
             .stream()
@@ -624,6 +628,10 @@ class FirestoreService:
             entry["id"] = doc.id
             results.append(entry)
         return results
+
+    async def delete_food_log(self, uid: str, log_id: str):
+        """Delete a food log entry by document ID."""
+        await self._user_ref(uid).collection("food_logs").document(log_id).delete()
 
     # ------------------------------------------------------------------
     # Exercise Sessions

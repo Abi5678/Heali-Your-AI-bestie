@@ -118,17 +118,20 @@ class FoodLogRequest(BaseModel):
 
 
 @router.get("/logs")
-async def get_food_logs(uid: str, limit: int = 20):
-    """Returns the most recent food log entries for a patient."""
+async def get_food_logs(uid: str, limit: int = 20, date: str | None = None):
+    """Returns the most recent food log entries for a patient, optionally filtered by date (YYYY-MM-DD)."""
     try:
         from agents.shared.firestore_service import FirestoreService
 
         fs = FirestoreService.get_instance()
         if not fs.is_available:
             from agents.shared.mock_data import FOOD_LOGS
-            return {"logs": FOOD_LOGS[-limit:]}
+            logs = FOOD_LOGS[-limit:]
+            if date:
+                logs = [l for l in logs if l.get("date") == date]
+            return {"logs": logs}
 
-        logs = await fs.get_food_logs(uid, limit=limit)
+        logs = await fs.get_food_logs(uid, limit=limit, date=date)
         return {"logs": logs}
     except Exception as e:
         logger.error(f"Error fetching food logs: {e}")
@@ -151,5 +154,22 @@ async def log_food(request: FoodLogRequest):
         return {"status": "success"}
     except Exception as e:
         logger.error(f"Error saving food log: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/log")
+async def delete_food_log(uid: str, log_id: str):
+    """Deletes a food log entry by its Firestore document ID."""
+    try:
+        from agents.shared.firestore_service import FirestoreService
+
+        fs = FirestoreService.get_instance()
+        if not fs.is_available:
+            return {"status": "success", "message": "Mock mode — nothing deleted"}
+
+        await fs.delete_food_log(uid, log_id)
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"Error deleting food log: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
