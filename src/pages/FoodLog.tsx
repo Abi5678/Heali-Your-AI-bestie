@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Camera, CameraOff, Upload, Apple, Loader2, Trash2 } from "lucide-react";
+import { Camera, CameraOff, Upload, Apple, Loader2, Trash2, Mic } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { analyzeFood, getFoodLogs, logFood, deleteFoodLog } from "@/lib/api";
@@ -20,6 +21,7 @@ interface MealEntry {
 
 const FoodLog = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [foodLogEntries, setFoodLogEntries] = useState<MealEntry[]>([]);
   const [cameraActive, setCameraActive] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -168,6 +170,21 @@ const FoodLog = () => {
   const totalCarbs = foodLogEntries.reduce((s, m) => s + m.carbs, 0);
   const totalFat = foodLogEntries.reduce((s, m) => s + m.fat, 0);
 
+  const handleDiscussWithVoiceAgent = () => {
+    const mealSummary = foodLogEntries.length > 0
+      ? foodLogEntries.map(m => `${m.meal} (${m.calories} kcal, ${m.protein}g protein, ${m.carbs}g carbs, ${m.fat}g fat): ${m.items}`).join("; ")
+      : "No meals logged yet today.";
+
+    const prompt =
+      `[SYSTEM (CRITICAL): The user is viewing their Food Log for today. Do NOT use the navigate_to_page tool. ` +
+      `Today's meals: ${mealSummary} ` +
+      `Daily totals: ${totalCal} kcal / ${totalProtein}g protein / ${totalCarbs}g carbs / ${totalFat}g fat. ` +
+      `Targets: 1600 kcal, 65g protein, 200g carbs, 55g fat. ` +
+      `You must proactively greet the user, briefly summarize their food intake for today, note any nutritional gaps or achievements, and ask if they have any questions about their diet. Do NOT attempt to navigate away.]`;
+
+    navigate("/voice", { state: { proactivePrompt: prompt } });
+  };
+
   const macros = [
     { label: "Calories", current: totalCal, target: 1600, unit: "kcal", color: "bg-primary" },
     { label: "Protein", current: totalProtein, target: 65, unit: "g", color: "bg-success" },
@@ -185,11 +202,11 @@ const FoodLog = () => {
             <em className="text-accent">Log</em>
           </h1>
           <button
-            onClick={() => window.location.href = "/voice"}
-            className="flex items-center gap-2 rounded-full border border-accent/30 bg-accent/5 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-accent transition-colors hover:bg-accent/10"
+            onClick={handleDiscussWithVoiceAgent}
+            className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-primary transition-colors hover:bg-primary/10"
           >
-            <Apple size={14} />
-            Return to Guardian
+            <Mic size={14} />
+            Discuss Food with Guardian
           </button>
         </div>
         <div className="rule-accent mt-6 mb-8 max-w-32" />
