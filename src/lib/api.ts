@@ -154,13 +154,23 @@ export async function analyzeFood(imageBase64: string) {
   }>(res);
 }
 
-export async function getFoodLogs(uid: string) {
-  const res = await fetch(`${REST_API_BASE_URL}/api/food/logs?uid=${encodeURIComponent(uid)}`, {
+export async function getFoodLogs(uid: string, date?: string) {
+  let url = `${REST_API_BASE_URL}/api/food/logs?uid=${encodeURIComponent(uid)}`;
+  if (date) url += `&date=${encodeURIComponent(date)}`;
+  const res = await fetch(url, {
     headers: { "Content-Type": "application/json" },
   });
   return handleResponse<{
-    logs: Array<{ meal_type?: string; description?: string; food_items?: string[]; calories?: number; protein_g?: number; carbs_g?: number; fat_g?: number; timestamp?: string; date?: string }>;
+    logs: Array<{ id?: string; meal_type?: string; description?: string; food_items?: string[]; calories?: number; protein_g?: number; carbs_g?: number; fat_g?: number; timestamp?: string; date?: string }>;
   }>(res);
+}
+
+export async function deleteFoodLog(uid: string, logId: string) {
+  const res = await fetch(
+    `${REST_API_BASE_URL}/api/food/log?uid=${encodeURIComponent(uid)}&log_id=${encodeURIComponent(logId)}`,
+    { method: "DELETE", headers: { "Content-Type": "application/json" } },
+  );
+  return handleResponse(res);
 }
 
 export async function logFood(

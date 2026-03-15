@@ -1,13 +1,14 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Camera, CameraOff, Upload, Apple, Loader2 } from "lucide-react";
+import { Camera, CameraOff, Upload, Apple, Loader2, Trash2 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { analyzeFood, getFoodLogs, logFood } from "@/lib/api";
+import { analyzeFood, getFoodLogs, logFood, deleteFoodLog } from "@/lib/api";
 import { useUIEvent } from "@/hooks/useUIEventStore";
 import { toast } from "@/hooks/use-toast";
 
 interface MealEntry {
+  id?: string;
   meal: string;
   time: string;
   items: string;
@@ -33,14 +34,16 @@ const FoodLog = () => {
     }
   }, [cameraActive]);
 
-  // Load persisted food logs on mount
+  // Load persisted food logs on mount (today only)
+  const todayDate = new Date().toISOString().slice(0, 10);
   useEffect(() => {
     if (!user?.uid) return;
-    getFoodLogs(user.uid)
+    getFoodLogs(user.uid, todayDate)
       .then(({ logs }) => {
         if (logs?.length) {
           setFoodLogEntries(
             logs.map((m) => ({
+              id: m.id,
               meal: m.meal_type || "Meal",
               time: m.timestamp
                 ? new Date(m.timestamp).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
@@ -145,6 +148,19 @@ const FoodLog = () => {
   useEffect(() => {
     return () => { stopCamera(); };
   }, [stopCamera]);
+
+  const handleDelete = useCallback(async (id: string | undefined, index: number) => {
+    if (id && user?.uid) {
+      try {
+        await deleteFoodLog(user.uid, id);
+      } catch {
+        toast({ variant: "destructive", title: "Delete failed", description: "Could not remove entry" });
+        return;
+      }
+    }
+    setFoodLogEntries((prev) => prev.filter((_, i) => i !== index));
+    toast({ title: "Entry removed" });
+  }, [user?.uid]);
 
   // Compute macro totals
   const totalCal = foodLogEntries.reduce((s, m) => s + m.calories, 0);
@@ -262,7 +278,16 @@ const FoodLog = () => {
                     </div>
                     <span className="text-sm font-semibold">{meal.meal}</span>
                   </div>
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{meal.time}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{meal.time}</span>
+                    <button
+                      onClick={() => handleDelete(meal.id, i)}
+                      className="rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      title="Delete entry"
+                    >
+                      <Trash2 size={12} strokeWidth={1.5} />
+                    </button>
+                  </div>
                 </div>
                 <p className="mb-2 text-sm text-muted-foreground">{meal.items}</p>
                 {meal.calories > 0 && (
