@@ -43,6 +43,9 @@ EXERCISE_LIST = [
     ("Final Relaxation", 60),
 ]
 
+# Per-user exercise progress tracking for backend interception (main.py imports this)
+EXERCISE_PROGRESS: dict[str, int] = {}
+
 
 def get_next_exercise(tool_context=None) -> dict:
     """Returns the next exercise to do.

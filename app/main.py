@@ -790,7 +790,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
             if 1 <= n < 14:
                 resume_msg = (
                     f"\n\n[SYSTEM: User reconnected. They have completed exercises 1 through {n}. "
-                    f"Resume with exercise {n + 1}. Call get_next_exercise({n}) to get the next exercise. "
+                    f"Resume with exercise {n + 1}. Call get_next_exercise() to get the next exercise. "
                     f"Do NOT restart from Box Breathing. Do NOT re-greet.]"
                 )
                 proactive_prompt = proactive_prompt + resume_msg
@@ -964,7 +964,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                                     exercise_name = EXERCISE_LIST[n - 1][0] if n <= len(EXERCISE_LIST) else "Box Breathing"
                                     user_text = (
                                         f"[SYSTEM: User confirmed. Call log_exercise_progress('{exercise_name}', {n}, 'user confirmed') "
-                                        f"then get_next_exercise({n}). Introduce ONLY the next exercise — never Box Breathing again.]"
+                                        f"then get_next_exercise(). Introduce ONLY the next exercise — never Box Breathing again.]"
                                     )
                                     logger.info("Exercise 'yes/ready' intercepted (text): n=%s", n)
                         except Exception as e:
@@ -986,7 +986,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                                     exercise_name = EXERCISE_LIST[n - 1][0] if n <= len(EXERCISE_LIST) else "Box Breathing"
                                     user_text = (
                                         f"[SYSTEM: User wants NEXT. Call log_exercise_progress('{exercise_name}', {n}, '') "
-                                        f"then get_next_exercise({n}). Introduce ONLY the next exercise.]"
+                                        f"then get_next_exercise(). Introduce ONLY the next exercise.]"
                                     )
                                     logger.info("Exercise 'next' intercepted (text): n=%s", n)
                         except Exception as e:
@@ -1228,7 +1228,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                                         exercise_name = EXERCISE_LIST[n - 1][0] if n <= len(EXERCISE_LIST) else "Box Breathing"
                                         directive = (
                                             f"[SYSTEM: User confirmed. You MUST call log_exercise_progress('{exercise_name}', {n}, 'user confirmed') "
-                                            f"then get_next_exercise({n}). Introduce ONLY the next exercise — never Box Breathing again.]"
+                                            f"then get_next_exercise(). Introduce ONLY the next exercise — never Box Breathing again.]"
                                         )
                                         live_request_queue.send_content(types.Content(parts=[types.Part(text=directive)]))
                                         logger.info("Exercise 'yes/ready' intercepted (voice): n=%s, advanced EXERCISE_PROGRESS", n)
@@ -1247,7 +1247,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                                         exercise_name = EXERCISE_LIST[n - 1][0] if n <= len(EXERCISE_LIST) else "Box Breathing"
                                         directive = (
                                             f"[SYSTEM: User wants NEXT. Call log_exercise_progress('{exercise_name}', {n}, '') "
-                                            f"then get_next_exercise({n}). Introduce ONLY the next exercise.]"
+                                            f"then get_next_exercise(). Introduce ONLY the next exercise.]"
                                         )
                                         live_request_queue.send_content(types.Content(parts=[types.Part(text=directive)]))
                                         logger.info("Exercise 'next' intercepted (voice): n=%s", n)
