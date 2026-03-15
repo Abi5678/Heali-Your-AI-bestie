@@ -45,34 +45,42 @@ EXERCISE_LIST = [
 
 
 def get_next_exercise(tool_context=None) -> dict:
-    """Returns the next exercise to do. 
-    
+    """Returns the next exercise to do.
+
     It automatically determines the next exercise based on your logged progress in Firestore.
     """
     _dbg("get_next_exercise", "entry", {}, "H1")
     uid = _get_user_id(tool_context)
-    
-    # Persistent State: rely on Firestore
+
+    # In-memory state is the authoritative source within a session (updated synchronously).
+    state_count = 0
+    if tool_context and hasattr(tool_context, "state"):
+        state_count = tool_context.state.get("exercises_completed", 0)
+
+    # Firestore as persistence fallback (may lag behind in-memory state).
     fs = FirestoreService.get_instance()
-    highest_logged = 0
+    firestore_count = 0
     if fs.is_available:
         try:
-            highest_logged = fs.get_exercise_progress_sync(uid)
-            _dbg("get_next_exercise", "firestore_read", {"uid": uid, "highest_logged": highest_logged})
+            firestore_count = fs.get_exercise_progress_sync(uid)
+            _dbg("get_next_exercise", "firestore_read", {"uid": uid, "firestore_count": firestore_count})
         except Exception as e:
             _dbg("get_next_exercise", "firestore_error", {"error": str(e)})
 
-    # Progression: highest_logged is the count of completed exercises.
-    # The next exercise is at index [highest_logged].
+    # Use the higher of the two — prevents re-running the same exercise if
+    # the Firestore write hasn't landed yet or is behind in-memory state.
+    highest_logged = max(state_count, firestore_count)
+    _dbg("get_next_exercise", "resolved", {"state_count": state_count, "firestore_count": firestore_count, "highest_logged": highest_logged}, "H1")
+
     if highest_logged >= TOTAL_EXERCISES:
         return {"next": None, "message": "Session complete. Call complete_exercise_session."}
-    
+
     idx = highest_logged
     name, duration = EXERCISE_LIST[idx]
     out = {
-        "exercise_name": name, 
-        "exercise_number": idx + 1, 
-        "duration_seconds": duration, 
+        "exercise_name": name,
+        "exercise_number": idx + 1,
+        "duration_seconds": duration,
         "message": f"Next: {name} ({duration}s). Introduce this — do not skip."
     }
     _dbg("get_next_exercise", "exit", {"highest_logged": highest_logged, **out}, "H1")
@@ -143,7 +151,7 @@ def wait_for_user_confirmation(tool_context=None) -> dict:
     return {
         "status": "waiting",
         "stop_speaking": True,
-        "message": "STOP SPEAKING NOW. End your turn. Do not say another word. Wait for the user to say yes, ready, or let's go. When they do, call log_exercise_progress(...) for the exercise you just completed, then get_next_exercise(last_completed) to get the NEXT exercise, and introduce that new exercise once.",
+        "message": "STOP SPEAKING NOW. End your turn. Do not say another word. Wait for the user to say yes, ready, or let's go. When they do, call log_exercise_progress(...) for the exercise you just completed, then call get_next_exercise() — if it returns an exercise, introduce it once; if it returns next=null, call complete_exercise_session().",
     }
 
 
