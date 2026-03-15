@@ -237,16 +237,16 @@ const Onboarding = () => {
           token,
         );
       }
+    } catch (e) {
+      console.error("Failed to save profile for Onboarding Specialist", e);
+    } finally {
+      setFillingWithAgent(false);
       saveOnboardingState({
         persona: selected,
         customAvatar: selected.id === "custom" ? customAvatar || undefined : undefined,
         completed: false,
       });
       navigate("/voice", { state: { fromOnboardingAgentChoice: true } });
-    } catch (e) {
-      console.error("Failed to save profile for Onboarding Specialist", e);
-    } finally {
-      setFillingWithAgent(false);
     }
   };
 
